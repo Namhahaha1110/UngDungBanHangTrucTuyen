@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "433047565987",
+    "project_id": "appshoppe-260329",
+    "storage_bucket": "appshoppe-260329.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433047565987:android:2d605db9b64e343c8f3116",
+        "android_client_info": {
+          "package_name": "com.example.appshoppe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBA8spd35nSMyVALPFsulo1nCXimeVkLCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
