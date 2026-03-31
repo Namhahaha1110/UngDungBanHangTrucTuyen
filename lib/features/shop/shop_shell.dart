@@ -43,9 +43,17 @@ class _ShopShellState extends State<ShopShell> {
         }
 
         final pages = [
-          _HomeTab(repository: _repository, userId: widget.user.uid),
+          _HomeTab(
+            repository: _repository,
+            userId: widget.user.uid,
+            onCartTap: () => setState(() => _currentIndex = 3),
+          ),
           _WishlistTab(repository: _repository, userId: widget.user.uid),
-          _CategoryTab(repository: _repository, userId: widget.user.uid),
+          _CategoryTab(
+            repository: _repository,
+            userId: widget.user.uid,
+            onCartTap: () => setState(() => _currentIndex = 3),
+          ),
           _CartTab(repository: _repository, userId: widget.user.uid),
           _ProfileTab(
             authService: widget.authService,
@@ -79,10 +87,12 @@ class _HomeTab extends StatelessWidget {
   const _HomeTab({
     required this.repository,
     required this.userId,
+    this.onCartTap,
   });
 
   final ShopRepository repository;
   final String userId;
+  final VoidCallback? onCartTap;
 
   @override
   Widget build(BuildContext context) {
@@ -125,42 +135,52 @@ class _HomeTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  SizedBox(
-                    width: 35,
-                    height: 35,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Center(
-                          child: Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 26,
-                            color: Color(0xFF111111),
-                          ),
-                        ),
-                        Positioned(
-                          right: -2,
-                          top: -4,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              '1',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                  StreamBuilder<List<UserProductItem>>(
+                    stream: repository.cartItems(userId),
+                    builder: (context, snapshot) {
+                      final cartCount = snapshot.data?.length ?? 0;
+                      return GestureDetector(
+                        onTap: onCartTap,
+                        child: SizedBox(
+                          width: 35,
+                          height: 35,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Center(
+                                child: Icon(
+                                  Icons.shopping_cart_outlined,
+                                  size: 26,
+                                  color: Color(0xFF111111),
+                                ),
                               ),
-                            ),
+                              if (cartCount > 0)
+                                Positioned(
+                                  right: -2,
+                                  top: -4,
+                                  child: Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      cartCount.toString(),
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -415,10 +435,12 @@ class _CategoryTab extends StatelessWidget {
   const _CategoryTab({
     required this.repository,
     required this.userId,
+    this.onCartTap,
   });
 
   final ShopRepository repository;
   final String userId;
+  final VoidCallback? onCartTap;
 
   @override
   Widget build(BuildContext context) {
@@ -467,10 +489,52 @@ class _CategoryTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Icon(
-                        Icons.shopping_cart_outlined,
-                        size: 27,
-                        color: Color(0xFF111111),
+                      StreamBuilder<List<UserProductItem>>(
+                        stream: repository.cartItems(userId),
+                        builder: (context, snapshot) {
+                          final cartCount = snapshot.data?.length ?? 0;
+                          return GestureDetector(
+                            onTap: onCartTap,
+                            child: SizedBox(
+                              width: 35,
+                              height: 35,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  const Center(
+                                    child: Icon(
+                                      Icons.shopping_cart_outlined,
+                                      size: 27,
+                                      color: Color(0xFF111111),
+                                    ),
+                                  ),
+                                  if (cartCount > 0)
+                                    Positioned(
+                                      right: -2,
+                                      top: -4,
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          cartCount.toString(),
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
