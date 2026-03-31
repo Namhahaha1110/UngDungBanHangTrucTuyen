@@ -43,3 +43,30 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Large Figma files
+UngDungBanHang.fig
+UngDungBanHang.backup-admin-*.fig
+_fig_exports/
+_fig_extract/
+_fig_tools/
+_fig_unpacked/
+_font_tmp/
+.tmp_canvas.fig
+.tmp_thumbnail.png
+UngDungBanHang-admin-import.svg
+
+# Admin pages
+/admin_pages/
+
+# Node modules
+/node_modules/
+package-lock.json
+
+# Build
+/dist/
+
+# Scripts
+/scripts/
+tool/create_admin_account.ps1
+tool/generate_admin_import_svg.js
