@@ -720,6 +720,51 @@ class _WishlistTab extends StatelessWidget {
   }
 }
 
+// Wrapper pages for navigation from profile menu
+class CartPageWrapper extends StatelessWidget {
+  const CartPageWrapper({
+    required this.repository,
+    required this.userId,
+    super.key,
+  });
+
+  final ShopRepository repository;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Giỏ hàng'),
+        centerTitle: true,
+      ),
+      body: _CartTab(repository: repository, userId: userId),
+    );
+  }
+}
+
+class WishlistPageWrapper extends StatelessWidget {
+  const WishlistPageWrapper({
+    required this.repository,
+    required this.userId,
+    super.key,
+  });
+
+  final ShopRepository repository;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sản phẩm yêu thích'),
+        centerTitle: true,
+      ),
+      body: _WishlistTab(repository: repository, userId: userId),
+    );
+  }
+}
+
 class _CartTab extends StatelessWidget {
   const _CartTab({
     required this.repository,
@@ -843,52 +888,75 @@ class _ProfileTab extends StatelessWidget {
       padding: EdgeInsets.zero,
       children: [
         Container(
-          height: 183,
           color: AppColors.primary,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(9, 28, 10, 0),
+            padding: const EdgeInsets.fromLTRB(9, 28, 10, 20),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Container(
-                      height: 38,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(19),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.sell_outlined,
-                            color: Colors.white,
-                            size: 19,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Bắt đầu bán',
-                            style: TextStyle(
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tính năng đang phát triển')),
+                        );
+                      },
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(19),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.sell_outlined,
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              size: 19,
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 8),
+                            Text(
+                              'Bắt đầu bán',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Colors.white,
-                      size: 29,
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => CartPageWrapper(
+                            repository: ShopRepository(FirebaseFirestore.instance),
+                            userId: user.uid,
+                          ),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.white,
+                        size: 29,
+                      ),
                     ),
                     const SizedBox(width: 18),
-                    const Icon(
-                      Icons.message_outlined,
-                      color: Colors.white,
-                      size: 27,
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tính năng đang phát triển')),
+                        );
+                      },
+                      child: const Icon(
+                        Icons.message_outlined,
+                        color: Colors.white,
+                        size: 27,
+                      ),
                     ),
                   ],
                 ),
@@ -957,38 +1025,45 @@ class _ProfileTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Container(
-                  height: 74,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text(
-                        'Đơn mua',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Tính năng đang phát triển')),
+                    );
+                  },
+                  child: Container(
+                    height: 74,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      children: [
+                        Text(
+                          'Đơn mua',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Spacer(),
-                      Text(
-                        'Xem lịch sử mua hàng',
-                        style: TextStyle(
+                        Spacer(),
+                        Text(
+                          'Xem lịch sử mua hàng',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 15,
                           color: AppColors.textSecondary,
-                          fontSize: 12,
                         ),
-                      ),
-                      SizedBox(width: 10),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 15,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -999,26 +1074,57 @@ class _ProfileTab extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Column(
-            children: const [
+            children: [
               _MenuTile(
                 icon: Icons.shopping_bag_outlined,
                 label: 'Giỏ hàng của tôi',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CartPageWrapper(
+                      repository: ShopRepository(FirebaseFirestore.instance),
+                      userId: user.uid,
+                    ),
+                  ),
+                ),
               ),
               _MenuTile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Đơn hàng của tôi',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tính năng đang phát triển')),
+                  );
+                },
               ),
               _MenuTile(
                 icon: Icons.favorite_border_rounded,
                 label: 'Sản phẩm yêu thích',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => WishlistPageWrapper(
+                      repository: ShopRepository(FirebaseFirestore.instance),
+                      userId: user.uid,
+                    ),
+                  ),
+                ),
               ),
               _MenuTile(
                 icon: Icons.local_shipping_outlined,
                 label: 'Vận chuyển',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tính năng đang phát triển')),
+                  );
+                },
               ),
               _MenuTile(
                 icon: Icons.confirmation_num_outlined,
                 label: 'Voucher',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tính năng đang phát triển')),
+                  );
+                },
               ),
             ],
           ),
@@ -1077,41 +1183,46 @@ class _MenuTile extends StatelessWidget {
   const _MenuTile({
     required this.icon,
     required this.label,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 58,
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.border,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 24, color: AppColors.textPrimary),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 16,
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 58,
+        margin: const EdgeInsets.only(bottom: 6),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.border,
             ),
           ),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 14,
-            color: AppColors.textSecondary,
-          ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 24, color: AppColors.textPrimary),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontSize: 16,
+                    ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
       ),
     );
   }
