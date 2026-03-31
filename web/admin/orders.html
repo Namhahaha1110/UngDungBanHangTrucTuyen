@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Orders</title>
+    <link rel="stylesheet" href="./admin-shell.css">
+</head>
+<body>
+<div class="admin-app">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">AS</div><h1>AppShoppe</h1><p>Admin workspace cho catalog, marketing, user data va don hang.</p></div>
+        <div class="nav-group">
+            <p class="nav-label">Main navigation</p>
+            <a class="nav-link" href="./dashboard.html"><strong>Tong quan</strong><span>KPI, alert, data map</span></a>
+            <a class="nav-link" href="./products.html"><strong>Products</strong><span>Bang san pham va ton kho</span></a>
+            <a class="nav-link" href="./categories.html"><strong>Categories</strong><span>Danh muc va taxonomy</span></a>
+            <a class="nav-link" href="./banners.html"><strong>Marketing</strong><span>Banner va flash sale assets</span></a>
+            <a class="nav-link" href="./sales.html"><strong>Sales</strong><span>Doanh thu, top san pham</span></a>
+            <a class="nav-link active" href="./orders.html"><strong>Orders</strong><span>Xu ly va theo doi don</span></a>
+            <a class="nav-link" href="./add_product.html"><strong>CRUD forms</strong><span>Them, sua, xoa record</span></a>
+        </div>
+        <div class="sidebar-note"><h2>Orders note</h2><p>Orders la nested records theo uid. Xoa hoac sua can phan biet giua order data, payment status va fulfillment status.</p></div>
+    </aside>
+    <main class="main-shell">
+        <header class="topbar">
+            <div><h2>Orders management</h2><p>Bang don hang, bo loc theo trang thai va khung xem chi tiet order dang duoc chon.</p></div>
+            <div class="topbar-actions"><div class="search-field">Tim theo order ID, uid, payment</div><div class="workspace-chip">orders / queue</div><button class="btn ghost">Xuat CSV</button></div>
+        </header>
+        <div class="page">
+            <section class="metric-grid">
+                <article class="metric-card"><div class="label">Pending</div><div class="value" style="color: var(--yellow);">12</div><div class="meta">cho xac nhan va doi soat</div></article>
+                <article class="metric-card"><div class="label">Paid</div><div class="value text-green">8</div><div class="meta">cho fulfillment</div></article>
+                <article class="metric-card"><div class="label">Failed</div><div class="value text-red">4</div><div class="meta">payment fail / user cancel</div></article>
+                <article class="metric-card"><div class="label">Average fulfillment</div><div class="value" style="color: var(--blue);">2.4d</div><div class="meta">tu luc tao den delivered</div></article>
+            </section>
+            <section class="workspace-grid main-aside">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Orders queue</h3><p>Bang van hanh de operator scan va thao tac nhanh tren tung order.</p></div></div>
+                    <div class="toolbar"><div class="chip active">Pending</div><div class="chip">Paid</div><div class="chip">Done</div><div class="chip">Refund</div><div class="toolbar-spacer"></div><a class="btn" href="./order_detail.html">Mo chi tiet</a></div>
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 140px 100px 150px 130px 120px 160px;"><div>Order ID</div><div>UID</div><div>Payment</div><div>Total</div><div>Status</div><div>Actions</div></div>
+                        <div class="table-row" style="grid-template-columns: 140px 100px 150px 130px 120px 160px;"><strong>order_2048</strong><span>uid_02</span><span>ShoppePay</span><strong class="text-accent">103000</strong><div class="status yellow">pending</div><div class="cell-actions"><a class="btn" href="./order_detail.html">Chi tiet</a><button class="btn">Sua</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 140px 100px 150px 130px 120px 160px;"><strong>order_2041</strong><span>uid_01</span><span>COD</span><strong class="text-accent">662000</strong><div class="status yellow">pending</div><div class="cell-actions"><a class="btn" href="./order_detail.html">Chi tiet</a><button class="btn">Sua</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 140px 100px 150px 130px 120px 160px;"><strong>order_2035</strong><span>uid_05</span><span>ShoppePay</span><strong class="text-accent">1245000</strong><div class="status green">paid</div><div class="cell-actions"><a class="btn" href="./order_detail.html">Chi tiet</a><button class="btn">Sua</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 140px 100px 150px 130px 120px 160px;"><strong>order_2018</strong><span>uid_08</span><span>Card</span><strong class="text-accent">329000</strong><div class="status red">failed</div><div class="cell-actions"><a class="btn" href="./order_detail.html">Chi tiet</a><button class="btn">Sua</button></div></div>
+                    </div>
+                </article>
+                <div class="list-block">
+                    <article class="panel">
+                        <div class="panel-title"><div><h3>Selected order</h3><p>Preview order dang duoc focus.</p></div></div>
+                        <div class="mini-card"><h4>order_2048</h4><p>uid_02 · ShoppePay · pending · created 31/03/2026</p></div>
+                        <div class="info-grid" style="margin-top: 14px;">
+                            <div class="info-card"><label>Address</label><span>Quan 12, TP.HCM</span></div>
+                            <div class="info-card"><label>Items</label><span>1 san pham</span></div>
+                            <div class="info-card"><label>Total</label><strong class="text-accent">103000</strong></div>
+                            <div class="info-card"><label>Status</label><span class="status yellow">pending</span></div>
+                        </div>
+                        <div class="footer-actions"><button class="btn">Doi trang thai</button><button class="btn danger">Xoa</button></div>
+                    </article>
+                    <article class="panel soft">
+                        <div class="panel-title"><div><h3>Queue guidance</h3><p>Quy tac xu ly don hang trong admin.</p></div></div>
+                        <div class="bullet-list">
+                            <div class="bullet-item"><div class="dot" style="background: var(--yellow);"></div><div><strong>Pending truoc 24h</strong><p>Can chot payment / address de tranh backlog fulfillment.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--green);"></div><div><strong>Paid -> giao van</strong><p>Khi payment da valid, only update fulfillment state, khong doi item list.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--red);"></div><div><strong>Delete la phuong an cuoi</strong><p>Neu can dong order, uu tien failed hoac cancelled thay vi xoa khoi nested collection.</p></div></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

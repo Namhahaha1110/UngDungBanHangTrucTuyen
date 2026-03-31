@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Categories</title>
+    <link rel="stylesheet" href="./admin-shell.css">
+</head>
+<body>
+<div class="admin-app">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">AS</div><h1>AppShoppe</h1><p>Admin workspace cho catalog, marketing, user data va don hang.</p></div>
+        <div class="nav-group">
+            <p class="nav-label">Main navigation</p>
+            <a class="nav-link" href="./dashboard.html"><strong>Tong quan</strong><span>KPI, alert, data map</span></a>
+            <a class="nav-link" href="./products.html"><strong>Products</strong><span>Bang san pham va ton kho</span></a>
+            <a class="nav-link active" href="./categories.html"><strong>Categories</strong><span>Danh muc va taxonomy</span></a>
+            <a class="nav-link" href="./banners.html"><strong>Marketing</strong><span>Banner va flash sale assets</span></a>
+            <a class="nav-link" href="./sales.html"><strong>Sales</strong><span>Doanh thu, top san pham</span></a>
+            <a class="nav-link" href="./orders.html"><strong>Orders</strong><span>Xu ly va theo doi don</span></a>
+            <a class="nav-link" href="./add_product.html"><strong>CRUD forms</strong><span>Them, sua, xoa record</span></a>
+        </div>
+        <div class="sidebar-note"><h2>Taxonomy note</h2><p>Categories can phan cap gon, ro nghia va giu image key nhat quan de dung lai trong UI va trong quang cao.</p></div>
+    </aside>
+    <main class="main-shell">
+        <header class="topbar">
+            <div><h2>Category taxonomy</h2><p>Quan ly danh muc, kha nang phu song san pham va anh huong den bo loc catalog.</p></div>
+            <div class="topbar-actions"><div class="search-field">Tim id hoac ten danh muc</div><div class="workspace-chip">catalog / categories</div><button class="btn primary">Them category</button></div>
+        </header>
+        <div class="page">
+            <section class="workspace-grid main-aside">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Categories table</h3><p>Bang danh muc se cap nhat bo loc, grid category va mapping categoryId trong products.</p></div></div>
+                    <div class="toolbar"><div class="search-field">Tim theo id / name</div><div class="chip active">Visible</div><div class="chip">Empty</div><div class="chip">Archived</div><div class="toolbar-spacer"></div><button class="btn primary">Them category</button></div>
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><div>ID</div><div>Ten hien thi</div><div>Image</div><div>Status</div><div>Actions</div></div>
+                        <div class="table-row" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><strong>men</strong><div class="cell-stack"><strong>Thoi Trang Nam</strong><span>products linked: 2</span></div><span>category_men.png</span><div class="status green">visible</div><div class="cell-actions"><button class="btn">Sua</button><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><strong>women</strong><div class="cell-stack"><strong>Thoi Trang Nu</strong><span>products linked: 1</span></div><span>category_women.png</span><div class="status green">visible</div><div class="cell-actions"><button class="btn">Sua</button><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><strong>kids</strong><div class="cell-stack"><strong>Thoi Trang Em Be</strong><span>products linked: 0</span></div><span>category_kids.png</span><div class="status yellow">empty</div><div class="cell-actions"><button class="btn">Sua</button><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><strong>beauty</strong><div class="cell-stack"><strong>Ve dep va Sang trong</strong><span>products linked: 0</span></div><span>category_beauty.png</span><div class="status yellow">empty</div><div class="cell-actions"><button class="btn">Sua</button><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 120px 1.7fr 190px 100px 160px;"><strong>home</strong><div class="cell-stack"><strong>Nha va Bep</strong><span>products linked: 1</span></div><span>category_home.png</span><div class="status green">visible</div><div class="cell-actions"><button class="btn">Sua</button><button class="btn">Xoa</button></div></div>
+                    </div>
+                </article>
+                <div class="list-block">
+                    <article class="panel">
+                        <div class="panel-title"><div><h3>Taxonomy health</h3><p>Danh gia nhanh do phu cua danh muc hien tai.</p></div></div>
+                        <div class="mini-card"><h4>3 active categories</h4><p>Dang co product map va xuat hien tren giao dien.</p></div>
+                        <div class="mini-card"><h4>2 empty categories</h4><p>kids va beauty dang la danh muc trong, can quyet dinh bo sung product hay an di.</p></div>
+                        <div class="mini-card"><h4>0 archived category</h4><p>Chua co luong du lieu da ngung su dung de dua vao trang thai archive.</p></div>
+                    </article>
+                    <article class="panel soft">
+                        <div class="panel-title"><div><h3>Taxonomy rules</h3><p>Quy tac de giu category clean va de scan.</p></div></div>
+                        <div class="bullet-list">
+                            <div class="bullet-item"><div class="dot" style="background: var(--accent);"></div><div><strong>Dung id ngan va ben</strong><p>Vi du: men, women, home. Tranh doi ten id vi product categoryId se bi anh huong.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--blue);"></div><div><strong>Image key phai co quy tac</strong><p>Ten anh can dong bo de khi render category grid khong bi vo thumbnail.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--yellow);"></div><div><strong>Empty category can duoc giam sat</strong><p>Neu de trong qua lau se lam giam chat luong bo loc va noise trong admin.</p></div></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section class="split-panels">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Coverage by category</h3><p>So product theo tung danh muc hien tai.</p></div></div>
+                    <div class="bar-chart">
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 80%;"></div></div><span>men</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 56%;"></div></div><span>women</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 34%;"></div></div><span>home</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 8%;"></div></div><span>kids</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 6%;"></div></div><span>beauty</span></div>
+                    </div>
+                </article>
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Selected category</h3><p>Snapshot record va tac dong den catalog.</p></div></div>
+                    <div class="info-card"><label>ID</label><strong>kids</strong></div>
+                    <div class="info-card" style="margin-top: 12px;"><label>Name</label><strong>Thoi Trang Em Be</strong></div>
+                    <div class="info-card" style="margin-top: 12px;"><label>Risk</label><span class="status yellow">empty</span></div>
+                    <div class="note-box" style="margin-top: 14px;"><strong>Recommendation</strong><p>Neu tiep tuc giu category nay, can co it nhat 1-2 products duoc map de bo loc va home grid khong tro nen thua.</p></div>
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

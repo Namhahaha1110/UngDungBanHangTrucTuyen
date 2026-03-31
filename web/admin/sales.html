@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Sales</title>
+    <link rel="stylesheet" href="./admin-shell.css">
+</head>
+<body>
+<div class="admin-app">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">AS</div><h1>AppShoppe</h1><p>Admin workspace cho catalog, marketing, user data va don hang.</p></div>
+        <div class="nav-group">
+            <p class="nav-label">Main navigation</p>
+            <a class="nav-link" href="./dashboard.html"><strong>Tong quan</strong><span>KPI, alert, data map</span></a>
+            <a class="nav-link" href="./products.html"><strong>Products</strong><span>Bang san pham va ton kho</span></a>
+            <a class="nav-link" href="./categories.html"><strong>Categories</strong><span>Danh muc va taxonomy</span></a>
+            <a class="nav-link" href="./banners.html"><strong>Marketing</strong><span>Banner va flash sale assets</span></a>
+            <a class="nav-link active" href="./sales.html"><strong>Sales</strong><span>Doanh thu, top san pham</span></a>
+            <a class="nav-link" href="./orders.html"><strong>Orders</strong><span>Xu ly va theo doi don</span></a>
+            <a class="nav-link" href="./add_product.html"><strong>CRUD forms</strong><span>Them, sua, xoa record</span></a>
+        </div>
+        <div class="sidebar-note"><h2>Sales note</h2><p>Man hinh nay uu tien utility copy, KPI va trend de operator scan nhanh, khong dung phong cach landing hay hero.</p></div>
+    </aside>
+    <main class="main-shell">
+        <header class="topbar">
+            <div><h2>Sales analytics</h2><p>Doanh thu, xu huong 7 ngay, top products va tinh hinh order theo trang thai.</p></div>
+            <div class="topbar-actions"><div class="search-field">Tim theo ngay, campaign, category</div><div class="workspace-chip">sales / analytics</div><button class="btn ghost">Xuat bao cao</button></div>
+        </header>
+        <div class="page">
+            <section class="metric-grid">
+                <article class="metric-card"><div class="label">GMV thang nay</div><div class="value text-accent">16.25M</div><div class="meta">+14.8% so voi thang truoc</div></article>
+                <article class="metric-card"><div class="label">Orders complete</div><div class="value text-green">37</div><div class="meta">31 delivered / 6 paid</div></article>
+                <article class="metric-card"><div class="label">AOV</div><div class="value" style="color: var(--blue);">439K</div><div class="meta">gia tri trung binh moi don</div></article>
+                <article class="metric-card"><div class="label">Refund risk</div><div class="value text-red">4</div><div class="meta">orders can doi soat</div></article>
+            </section>
+            <section class="chart-grid">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>7-day revenue</h3><p>Trend doanh thu de chot quyet dinh ve banner, flash sale va inventory.</p></div></div>
+                    <div class="bar-chart">
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 38%;"></div></div><span>25/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 56%;"></div></div><span>26/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 48%;"></div></div><span>27/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 70%;"></div></div><span>28/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 62%;"></div></div><span>29/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 78%;"></div></div><span>30/03</span></div>
+                        <div class="bar"><div class="bar-track"><div class="bar-fill" style="height: 92%;"></div></div><span>31/03</span></div>
+                    </div>
+                </article>
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Operational snapshot</h3><p>Trang thai order va nhom doanh thu can scan nhanh.</p></div></div>
+                    <div class="ring-row">
+                        <div class="kpi-line"><div><strong>Pending orders</strong><span>Can doi soat trong 24h</span></div><strong class="text-red">12</strong></div>
+                        <div class="kpi-line"><div><strong>Paid orders</strong><span>Cho giao van</span></div><strong class="text-green">8</strong></div>
+                        <div class="kpi-line"><div><strong>Delivered</strong><span>Da chot doanh thu</span></div><strong class="text-accent">31</strong></div>
+                        <div class="kpi-line"><div><strong>Refund risk</strong><span>Card fail / user cancel</span></div><strong class="text-red">4</strong></div>
+                    </div>
+                </article>
+            </section>
+            <section class="split-panels">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Top products by revenue</h3><p>Record giup quyet dinh campaign tiep theo va uu tien ton kho.</p></div></div>
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 1.2fr 100px 120px 120px;"><div>Product</div><div>Units</div><div>Revenue</div><div>Status</div></div>
+                        <div class="table-row" style="grid-template-columns: 1.2fr 100px 120px 120px;"><div class="cell-stack"><strong>jeans_1</strong><span>Quan Jeans nam ong suong WHY NOT</span></div><span>12</span><strong class="text-accent">3.96M</strong><div class="status green">best seller</div></div>
+                        <div class="table-row" style="grid-template-columns: 1.2fr 100px 120px 120px;"><div class="cell-stack"><strong>shirt_1</strong><span>Ao Thun - Classic Regular Tee</span></div><span>9</span><strong class="text-accent">1.89M</strong><div class="status green">growing</div></div>
+                        <div class="table-row" style="grid-template-columns: 1.2fr 100px 120px 120px;"><div class="cell-stack"><strong>powerbank_1</strong><span>USAMS Power Bank Sac nhanh PD 20W</span></div><span>4</span><strong class="text-accent">1.18M</strong><div class="status yellow">stock risk</div></div>
+                    </div>
+                </article>
+                <article class="panel soft">
+                    <div class="panel-title"><div><h3>Actionable notes</h3><p>Ket luan ngan cho operator.</p></div></div>
+                    <div class="bullet-list">
+                        <div class="bullet-item"><div class="dot" style="background: var(--accent);"></div><div><strong>Jeans_1 nen tiep tuc push</strong><p>Dang co doanh thu cao va margin tot. Co the giu o hero slot them 1 chu ky.</p></div></div>
+                        <div class="bullet-item"><div class="dot" style="background: var(--yellow);"></div><div><strong>Powerbank_1 can xem ton kho</strong><p>Neu tiep tuc chay flash sale ma khong bo sung ton kho se tao don pending khong can thiet.</p></div></div>
+                        <div class="bullet-item"><div class="dot" style="background: var(--blue);"></div><div><strong>Banner update co tac dong truc tiep</strong><p>Cac slot campaign dang dong gop cho doanh thu ngay 30-31/03, nen doi creative co kiem soat.</p></div></div>
+                    </div>
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

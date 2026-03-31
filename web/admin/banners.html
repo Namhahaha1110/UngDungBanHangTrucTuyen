@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Marketing</title>
+    <link rel="stylesheet" href="./admin-shell.css">
+</head>
+<body>
+<div class="admin-app">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">AS</div>
+            <h1>AppShoppe</h1>
+            <p>Admin workspace cho catalog, marketing, user data va don hang.</p>
+        </div>
+
+        <div class="nav-group">
+            <p class="nav-label">Main navigation</p>
+            <a class="nav-link" href="./dashboard.html"><strong>Tong quan</strong><span>KPI, alert, data map</span></a>
+            <a class="nav-link" href="./products.html"><strong>Products</strong><span>Bang san pham va ton kho</span></a>
+            <a class="nav-link" href="./categories.html"><strong>Categories</strong><span>Danh muc va taxonomy</span></a>
+            <a class="nav-link active" href="./banners.html"><strong>Marketing</strong><span>Banner va flash sale assets</span></a>
+            <a class="nav-link" href="./sales.html"><strong>Sales</strong><span>Doanh thu, top san pham</span></a>
+            <a class="nav-link" href="./orders.html"><strong>Orders</strong><span>Xu ly va theo doi don</span></a>
+            <a class="nav-link" href="./add_product.html"><strong>CRUD forms</strong><span>Them, sua, xoa record</span></a>
+        </div>
+
+        <div class="sidebar-note">
+            <h2>Marketing note</h2>
+            <p>Banner va flash sale la asset-level content. Xoa nham key co the lam home mat khoi hien thi ngay lap tuc.</p>
+        </div>
+    </aside>
+
+    <main class="main-shell">
+        <header class="topbar">
+            <div>
+                <h2>Marketing assets</h2>
+                <p>Quan ly hero banner, flash sale asset va policy de giu asset naming on dinh.</p>
+            </div>
+            <div class="topbar-actions">
+                <div class="search-field">Tim image key hoac campaign</div>
+                <div class="workspace-chip">marketing / assets</div>
+                <button class="btn primary">Them asset</button>
+            </div>
+        </header>
+
+        <div class="page">
+            <section class="split-panels">
+                <article class="panel">
+                    <div class="panel-title">
+                        <div>
+                            <h3>Banners</h3>
+                            <p>Hero assets cho homepage slider.</p>
+                        </div>
+                        <button class="btn primary">Them banner</button>
+                    </div>
+
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <div>ID</div>
+                            <div>Image key / use case</div>
+                            <div>Status</div>
+                            <div>Actions</div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>banner_1</strong>
+                            <div class="cell-stack">
+                                <strong>banner_1.png</strong>
+                                <span>campaign: home hero / position 1</span>
+                            </div>
+                            <div class="status green">active</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>banner_2</strong>
+                            <div class="cell-stack">
+                                <strong>banner_2.png</strong>
+                                <span>campaign: month-end push / position 2</span>
+                            </div>
+                            <div class="status blue">draft</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>banner_3</strong>
+                            <div class="cell-stack">
+                                <strong>banner_3.png</strong>
+                                <span>campaign: seasonal / position 3</span>
+                            </div>
+                            <div class="status green">active</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel">
+                    <div class="panel-title">
+                        <div>
+                            <h3>Flash sale</h3>
+                            <p>Asset xuat hien o module flash sale.</p>
+                        </div>
+                        <button class="btn primary">Them flash</button>
+                    </div>
+
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <div>ID</div>
+                            <div>Image key / use case</div>
+                            <div>Status</div>
+                            <div>Actions</div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>flash_1</strong>
+                            <div class="cell-stack">
+                                <strong>flash_1.png</strong>
+                                <span>flash card / position 1</span>
+                            </div>
+                            <div class="status green">active</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>flash_2</strong>
+                            <div class="cell-stack">
+                                <strong>flash_2.png</strong>
+                                <span>flash card / position 2</span>
+                            </div>
+                            <div class="status green">active</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+
+                        <div class="table-row" style="grid-template-columns: 120px 1.4fr 100px 160px;">
+                            <strong>flash_3</strong>
+                            <div class="cell-stack">
+                                <strong>flash_3.png</strong>
+                                <span>flash card / position 3</span>
+                            </div>
+                            <div class="status yellow">review</div>
+                            <div class="cell-actions">
+                                <button class="btn">Sua</button>
+                                <button class="btn">Xoa</button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="workspace-grid main-aside">
+                <article class="panel">
+                    <div class="panel-title">
+                        <div>
+                            <h3>Campaign surfaces</h3>
+                            <p>Preview cac vi tri hien thi ma asset se anh huong sau khi update.</p>
+                        </div>
+                    </div>
+
+                    <div class="split-panels">
+                        <div class="panel soft">
+                            <div class="panel-title">
+                                <div>
+                                    <h3>Hero slot</h3>
+                                    <p>Homepage slider area.</p>
+                                </div>
+                            </div>
+                            <div style="height: 180px; border-radius: 20px; background: linear-gradient(135deg, #ff9b5d 0%, #ff6b00 72%);"></div>
+                            <div class="note-box" style="margin-top: 14px;">
+                                <strong>banner_1.png</strong>
+                                <p>Dang la visual active cho hero slot so 1.</p>
+                            </div>
+                        </div>
+
+                        <div class="panel soft">
+                            <div class="panel-title">
+                                <div>
+                                    <h3>Flash module</h3>
+                                    <p>Block flash sale o home.</p>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div style="height: 84px; border-radius: 18px; background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 100%);"></div>
+                                <div style="height: 84px; border-radius: 18px; background: linear-gradient(135deg, #fde68a 0%, #ff6b00 100%);"></div>
+                                <div style="height: 84px; border-radius: 18px; background: linear-gradient(135deg, #ffd7bf 0%, #ff8e4d 100%);"></div>
+                                <div style="height: 84px; border-radius: 18px; background: linear-gradient(135deg, #fee2e2 0%, #ef4444 100%);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="list-block">
+                    <article class="panel soft">
+                        <div class="panel-title">
+                            <div>
+                                <h3>Asset policy</h3>
+                                <p>Cac quy tac de file image va key khong bi vo.</p>
+                            </div>
+                        </div>
+                        <div class="bullet-list">
+                            <div class="bullet-item">
+                                <div class="dot" style="background: var(--accent);"></div>
+                                <div>
+                                    <strong>Key phai trung ten file</strong>
+                                    <p>Vi du banner_1 -> banner_1.png. Tranh key mo ta dai hoac doi format dot ngot.</p>
+                                </div>
+                            </div>
+                            <div class="bullet-item">
+                                <div class="dot" style="background: var(--red);"></div>
+                                <div>
+                                    <strong>Xoa asset anh huong UI ngay</strong>
+                                    <p>Neu chi muon stop campaign, uu tien draft hoac thay image key.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <div class="panel-title">
+                            <div>
+                                <h3>Schedule snapshot</h3>
+                                <p>Tien do campaign va slot hien tai.</p>
+                            </div>
+                        </div>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="dot" style="background: var(--green);"></div>
+                                <div>
+                                    <strong>Campaign summer drop</strong>
+                                    <p>slot 1-2 dang active den 31/03</p>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="dot" style="background: var(--yellow);"></div>
+                                <div>
+                                    <strong>Flash refresh thang 4</strong>
+                                    <p>asset flash_3 can review truoc khi publish</p>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="dot" style="background: var(--blue);"></div>
+                                <div>
+                                    <strong>Banner_2 dang o draft</strong>
+                                    <p>Cho xac nhan image crop va content alignment</p>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

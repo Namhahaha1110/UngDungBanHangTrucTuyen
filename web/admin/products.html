@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Products</title>
+    <link rel="stylesheet" href="./admin-shell.css">
+</head>
+<body>
+<div class="admin-app">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">AS</div><h1>AppShoppe</h1><p>Admin workspace cho catalog, marketing, user data va don hang.</p></div>
+        <div class="nav-group">
+            <p class="nav-label">Main navigation</p>
+            <a class="nav-link" href="./dashboard.html"><strong>Tong quan</strong><span>KPI, alert, data map</span></a>
+            <a class="nav-link active" href="./products.html"><strong>Products</strong><span>Bang san pham va ton kho</span></a>
+            <a class="nav-link" href="./categories.html"><strong>Categories</strong><span>Danh muc va taxonomy</span></a>
+            <a class="nav-link" href="./banners.html"><strong>Marketing</strong><span>Banner va flash sale assets</span></a>
+            <a class="nav-link" href="./sales.html"><strong>Sales</strong><span>Doanh thu, top san pham</span></a>
+            <a class="nav-link" href="./orders.html"><strong>Orders</strong><span>Xu ly va theo doi don</span></a>
+            <a class="nav-link" href="./add_product.html"><strong>CRUD forms</strong><span>Them, sua, xoa record</span></a>
+        </div>
+        <div class="sidebar-note"><h2>Catalog note</h2><p>Product va category la hai bang chi phoi listing, search va chi tiet san pham. Moi thay doi schema deu can giu compatibility.</p></div>
+    </aside>
+    <main class="main-shell">
+        <header class="topbar">
+            <div><h2>Catalog management</h2><p>Bang san pham, bo loc, hanh dong sua xoa va khu xem nhanh chi tiet record.</p></div>
+            <div class="topbar-actions"><div class="search-field">Tim theo id, name, categoryId</div><div class="workspace-chip">catalog / products</div><button class="btn primary">Them product</button></div>
+        </header>
+        <div class="page">
+            <section class="metric-grid">
+                <article class="metric-card"><div class="label">Products active</div><div class="value text-accent">4</div><div class="meta">seed records hien tai</div></article>
+                <article class="metric-card"><div class="label">Categories linked</div><div class="value" style="color: var(--blue);">3</div><div class="meta">men, women, home</div></article>
+                <article class="metric-card"><div class="label">Review required</div><div class="value" style="color: var(--yellow);">1</div><div class="meta">low-stock / draft</div></article>
+                <article class="metric-card"><div class="label">Favorite footprint</div><div class="value text-green">2</div><div class="meta">records co kha nang nam trong favorites</div></article>
+            </section>
+            <section class="workspace-grid main-aside">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Products table</h3><p>Quan sat gia, category, trang thai va thao tac chinh tren tung record.</p></div></div>
+                    <div class="toolbar">
+                        <div class="search-field">Tim theo id / name / categoryId</div>
+                        <div class="chip active">Tat ca</div><div class="chip">Dang ban</div><div class="chip">Nhap</div><div class="chip">Het hang</div>
+                        <div class="toolbar-spacer"></div>
+                        <button class="btn ghost">Import CSV</button><button class="btn primary">Them product</button>
+                    </div>
+                    <div class="table">
+                        <div class="table-head" style="grid-template-columns: 130px 2fr 100px 110px 110px 160px;"><div>ID</div><div>Ten san pham</div><div>Category</div><div>Gia</div><div>Status</div><div>Actions</div></div>
+                        <div class="table-row" style="grid-template-columns: 130px 2fr 100px 110px 110px 160px;"><strong>jeans_1</strong><div class="cell-stack"><strong>Quan Jeans nam ong suong WHY NOT</strong><span>oldPrice: 550000 · soldText: Da ban 1k+</span></div><span>men</span><strong class="text-accent">330650</strong><div class="status green">active</div><div class="cell-actions"><a class="btn" href="./add_product.html">Sua</a><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 130px 2fr 100px 110px 110px 160px;"><strong>hoodie_1</strong><div class="cell-stack"><strong>HeaSmile ao ni nam co tron basic</strong><span>oldPrice: 299000 · soldText: Da ban 600+</span></div><span>men</span><strong class="text-accent">217560</strong><div class="status blue">draft</div><div class="cell-actions"><a class="btn" href="./add_product.html">Sua</a><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 130px 2fr 100px 110px 110px 160px;"><strong>shirt_1</strong><div class="cell-stack"><strong>Ao Thun - Classic Regular Tee</strong><span>oldPrice: 260000 · soldText: Da ban 800+</span></div><span>women</span><strong class="text-accent">210375</strong><div class="status green">active</div><div class="cell-actions"><a class="btn" href="./add_product.html">Sua</a><button class="btn">Xoa</button></div></div>
+                        <div class="table-row" style="grid-template-columns: 130px 2fr 100px 110px 110px 160px;"><strong>powerbank_1</strong><div class="cell-stack"><strong>USAMS Power Bank Sac nhanh PD 20W</strong><span>oldPrice: 420000 · soldText: Da ban 300+</span></div><span>home</span><strong class="text-accent">295510</strong><div class="status yellow">low-stock</div><div class="cell-actions"><a class="btn" href="./add_product.html">Sua</a><button class="btn">Xoa</button></div></div>
+                    </div>
+                </article>
+                <div class="list-block">
+                    <article class="panel">
+                        <div class="panel-title"><div><h3>Selected record</h3><p>Preview nhanh cua record dang focus.</p></div></div>
+                        <div class="mini-card"><h4>powerbank_1</h4><p>USAMS Power Bank Sac nhanh PD 20W · categoryId: home · image: product_powerbank.png</p></div>
+                        <div class="info-grid" style="margin-top: 14px;">
+                            <div class="info-card"><label>Price</label><strong class="text-accent">295510</strong></div>
+                            <div class="info-card"><label>Old price</label><span>420000</span></div>
+                            <div class="info-card"><label>Status</label><span class="status yellow">low-stock</span></div>
+                            <div class="info-card"><label>Impact</label><span>Home + detail page</span></div>
+                        </div>
+                        <div class="footer-actions"><button class="btn">Nhan ban</button><button class="btn danger">Xoa</button></div>
+                    </article>
+                    <article class="panel soft">
+                        <div class="panel-title"><div><h3>Rules</h3><p>Quy tac thao tac tren bang products.</p></div></div>
+                        <div class="bullet-list">
+                            <div class="bullet-item"><div class="dot" style="background: var(--accent);"></div><div><strong>Khong doi id khi sua</strong><p>Giup favorites, cart va link trong giao dien khong bi vo.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--blue);"></div><div><strong>image key phai dung ten asset</strong><p>Neu sai key, the product card se mat anh trong UI.</p></div></div>
+                            <div class="bullet-item"><div class="dot" style="background: var(--yellow);"></div><div><strong>Uu tien draft neu can an san pham</strong><p>Han che delete truc tiep khi record da xuat hien trong don hang cu.</p></div></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section class="split-panels">
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Inventory buckets</h3><p>Phan loai nhanh ton kho de uu tien xu ly.</p></div></div>
+                    <div class="table table-compact">
+                        <div class="table-row" style="grid-template-columns: 1.2fr 90px 100px;"><strong>Healthy stock</strong><span>2 items</span><span class="status green">stable</span></div>
+                        <div class="table-row" style="grid-template-columns: 1.2fr 90px 100px;"><strong>Draft / hidden</strong><span>1 item</span><span class="status blue">review</span></div>
+                        <div class="table-row" style="grid-template-columns: 1.2fr 90px 100px;"><strong>Low stock</strong><span>1 item</span><span class="status yellow">urgent</span></div>
+                    </div>
+                </article>
+                <article class="panel">
+                    <div class="panel-title"><div><h3>Table dependencies</h3><p>Cac field quan trong can giu dong bo voi nhung bang khac.</p></div></div>
+                    <div class="bullet-list">
+                        <div class="bullet-item"><div class="dot" style="background: var(--green);"></div><div><strong>categoryId phu thuoc categories</strong><p>Chi dung key da ton tai trong bang categories de giu bo loc va listing hop le.</p></div></div>
+                        <div class="bullet-item"><div class="dot" style="background: var(--red);"></div><div><strong>Xoa product se anh huong nested tables</strong><p>cart, favorites va order items co the van tro den productId nay.</p></div></div>
+                    </div>
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

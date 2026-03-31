@@ -6,8 +6,10 @@ import '../../models/shop_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../admin/admin_view_mode.dart';
 import 'checkout_page.dart';
 import 'formatting.dart';
+import 'orders_page.dart';
 import 'product_detail_page.dart';
 
 class ShopShell extends StatefulWidget {
@@ -56,6 +58,7 @@ class _ShopShellState extends State<ShopShell> {
           ),
           _CartTab(repository: _repository, userId: widget.user.uid),
           _ProfileTab(
+            repository: _repository,
             authService: widget.authService,
             user: widget.user,
           ),
@@ -875,10 +878,12 @@ class _CartTab extends StatelessWidget {
 
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab({
+    required this.repository,
     required this.authService,
     required this.user,
   });
 
+  final ShopRepository repository;
   final AuthService authService;
   final User user;
 
@@ -1075,6 +1080,70 @@ class _ProfileTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Column(
             children: [
+              // Admin button - show at top if user is admin
+              StreamBuilder<bool>(
+                stream: repository.isAdmin(user.uid).asStream(),
+                builder: (context, snapshot) {
+                  final isAdmin = snapshot.data ?? false;
+                  if (!isAdmin) return const SizedBox.shrink();
+                  return Column(
+                    children: [
+                      GestureDetector(
+                        onTap: AdminViewMode.openAdmin,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B00),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.admin_panel_settings_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Quản lý cửa hàng',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Truy cập bảng điều khiển',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                  );
+                },
+              ),
               _MenuTile(
                 icon: Icons.shopping_bag_outlined,
                 label: 'Giỏ hàng của tôi',
@@ -1090,11 +1159,14 @@ class _ProfileTab extends StatelessWidget {
               _MenuTile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Đơn hàng của tôi',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tính năng đang phát triển')),
-                  );
-                },
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => OrdersPage(
+                      repository: ShopRepository(FirebaseFirestore.instance),
+                      userId: user.uid,
+                    ),
+                  ),
+                ),
               ),
               _MenuTile(
                 icon: Icons.favorite_border_rounded,

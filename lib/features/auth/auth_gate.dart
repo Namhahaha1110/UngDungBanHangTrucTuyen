@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../admin/admin_shell_wrapper.dart';
 import '../shop/shop_shell.dart';
 
 class AuthGate extends StatelessWidget {
@@ -27,9 +30,35 @@ class AuthGate extends StatelessWidget {
           return AuthFlow(authService: authService);
         }
 
-        return ShopShell(
-          authService: authService,
-          user: user,
+        // Check if user is admin
+        return FutureBuilder<bool>(
+          future: ShopRepository(FirebaseFirestore.instance).isAdmin(user.uid),
+          builder: (context, adminSnapshot) {
+            if (adminSnapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final isAdmin = adminSnapshot.data ?? false;
+            final firestore = FirebaseFirestore.instance;
+            final repository = ShopRepository(firestore);
+
+            if (isAdmin) {
+              // Route admin users to admin shell wrapper
+              return AdminShellWrapper(
+                authService: authService,
+                user: user,
+                repository: repository,
+              );
+            }
+
+            // Route regular users to ShopShell
+            return ShopShell(
+              authService: authService,
+              user: user,
+            );
+          },
         );
       },
     );

@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Mobile Board</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --canvas: #1f1f1f;
+      --frame-border: #d9d9d9;
+      --surface: #ffffff;
+      --surface-soft: #f7f7f7;
+      --line: #ececec;
+      --text: #171717;
+      --muted: #7a7a7a;
+      --accent: #f97316;
+      --accent-dark: #ea580c;
+      --accent-soft: #fff2e8;
+      --green: #22c55e;
+      --green-soft: #eafaf0;
+      --yellow: #f59e0b;
+      --yellow-soft: #fff7df;
+      --red: #ef4444;
+      --red-soft: #fff1f1;
+      --blue: #2563eb;
+      --blue-soft: #eff5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--canvas);
+      color: var(--text);
+    }
+
+    .board {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 88px 94px;
+      align-items: flex-start;
+      padding: 56px 62px 120px;
+    }
+
+    .frame-group {
+      width: 392px;
+    }
+
+    .frame-caption {
+      margin: 0 0 12px;
+      color: #a5a5a5;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .screen {
+      width: 392px;
+      height: 844px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--frame-border);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 34px;
+      padding: 0 18px;
+      background: var(--accent-dark);
+      color: #111;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-icons {
+      letter-spacing: 1px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .topbar .title {
+      flex: 1;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav-icon,
+    .top-action {
+      width: 24px;
+      color: var(--accent-dark);
+      font-size: 20px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .screen-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .summary-chip {
+      padding: 10px 10px 12px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+    }
+
+    .summary-chip strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .summary-chip span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .summary-chip.orange {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .summary-chip.green {
+      background: var(--green-soft);
+      color: #12824a;
+    }
+
+    .summary-chip.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .summary-chip.yellow {
+      background: var(--yellow-soft);
+      color: #a86900;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .card.soft {
+      background: var(--surface-soft);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 0 12px 12px;
+    }
+
+    .module-card {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .module-card strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .module-card span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .module-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .table-list,
+    .stack {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .list-row:first-child {
+      border-top: 0;
+    }
+
+    .thumb {
+      width: 52px;
+      height: 52px;
+      flex: none;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #f5f5f5 0%, #e9e9e9 100%);
+      border: 1px solid #e5e5e5;
+    }
+
+    .row-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .row-main strong,
+    .row-main .headline {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .row-main span,
+    .row-main .subline {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .row-side {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex: none;
+    }
+
+    .price {
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.orange {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .badge.green {
+      background: var(--green-soft);
+      color: #12824a;
+    }
+
+    .badge.yellow {
+      background: var(--yellow-soft);
+      color: #a86900;
+    }
+
+    .badge.blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .badge.red {
+      background: var(--red-soft);
+      color: #d12626;
+    }
+
+    .tiny-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tiny-btn {
+      height: 22px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #4f4f4f;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 20px;
+      white-space: nowrap;
+    }
+
+    .tiny-btn.fill {
+      border-color: #ffd2b1;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .tiny-btn.danger {
+      border-color: #ffd1d1;
+      background: #fff4f4;
+      color: #d12626;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #f4f4f4;
+      color: #5d5d5d;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 26px;
+    }
+
+    .filter-pill.active {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .mini-card {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .mini-card strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mini-card span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px 0;
+    }
+
+    .field label {
+      color: #3f3f3f;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .input,
+    .textarea {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafafa;
+      color: #3f3f3f;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .textarea {
+      min-height: 78px;
+    }
+
+    .footer-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .cta {
+      flex: 1;
+      height: 40px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 40px;
+    }
+
+    .cta.primary {
+      background: var(--accent-dark);
+      color: #fff;
+    }
+
+    .cta.ghost {
+      border: 1px solid #f6c5a3;
+      background: #fff7f1;
+      color: var(--accent-dark);
+    }
+
+    .notice {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .modal-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 650px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.1));
+    }
+
+    .modal-card {
+      width: calc(100% - 36px);
+      padding: 18px 16px 16px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    .modal-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .modal-card p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <section class="frame-group">
+      <p class="frame-caption">Admin</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">≡</div>
+          <div class="title">Trang quản trị</div>
+          <div class="top-action">＋</div>
+        </div>
+        <div class="screen-body">
+          <div class="search-box"><span>Tìm bảng, record hoặc mã đơn hàng</span><span>⌕</span></div>
+          <div class="summary-row">
+            <div class="summary-chip orange"><strong>6</strong><span>mục quản lý chính</span></div>
+            <div class="summary-chip green"><strong>17</strong><span>mục chờ xử lý</span></div>
+            <div class="summary-chip blue"><strong>3</strong><span>cảnh báo dữ liệu</span></div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Chức năng quản lý <span>Toàn bộ app</span></div>
+            <div class="module-grid">
+              <div class="module-card"><strong>Sản phẩm</strong><span>4 record đang bán</span><div class="module-foot"><span class="badge orange">CRUD</span><span class="tiny-btn fill">Mở</span></div></div>
+              <div class="module-card"><strong>Danh mục</strong><span>5 nhóm chính</span><div class="module-foot"><span class="badge blue">Sort</span><span class="tiny-btn fill">Mở</span></div></div>
+              <div class="module-card"><strong>Banner</strong><span>3 asset homepage</span><div class="module-foot"><span class="badge green">Active</span><span class="tiny-btn fill">Mở</span></div></div>
+              <div class="module-card"><strong>Flash sale</strong><span>6 record giảm giá</span><div class="module-foot"><span class="badge yellow">Timer</span><span class="tiny-btn fill">Mở</span></div></div>
+              <div class="module-card"><strong>Đơn hàng</strong><span>24 đơn gần nhất</span><div class="module-foot"><span class="badge orange">Theo dõi</span><span class="tiny-btn fill">Mở</span></div></div>
+              <div class="module-card"><strong>Người dùng</strong><span>18 tài khoản</span><div class="module-foot"><span class="badge red">Cẩn thận</span><span class="tiny-btn fill">Mở</span></div></div>
+            </div>
+          </div>
+
+          <div class="card soft">
+            <div class="section-title">Thao tác nhanh <span>CRUD</span></div>
+            <div class="table-list">
+              <div class="list-row"><div class="row-main"><strong>Thêm sản phẩm mới</strong><span>Tạo record mới cho bảng products</span></div><div class="row-side"><span class="tiny-btn fill">Thêm</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>Tạo banner chiến dịch</strong><span>Thêm asset mới cho homepage</span></div><div class="row-side"><span class="tiny-btn fill">Thêm</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>Sửa flash sale</strong><span>Điều chỉnh off %, thời gian, trạng thái</span></div><div class="row-side"><span class="tiny-btn">Sửa</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>Rà soát người dùng</strong><span>Kiểm tra favorites, cart, orders theo uid</span></div><div class="row-side"><span class="tiny-btn">Xem</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý sản phẩm</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý sản phẩm</div>
+          <div class="top-action">＋</div>
+        </div>
+        <div class="screen-body">
+          <div class="search-box"><span>Tìm theo id, tên, categoryId</span><span>⌕</span></div>
+          <div class="filter-row">
+            <div class="filter-pill active">Tất cả</div>
+            <div class="filter-pill">Đang bán</div>
+            <div class="filter-pill">Draft</div>
+            <div class="filter-pill">Low-stock</div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Danh sách record <span>products</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><span class="headline">jeans_1</span><span class="subline">Quần jeans nam ống suông · men</span></div><div class="row-side"><span class="price">330.650đ</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><span class="headline">hoodie_1</span><span class="subline">Áo nỉ basic cổ tròn · men</span></div><div class="row-side"><span class="badge blue">draft</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><span class="headline">shirt_1</span><span class="subline">Classic regular tee · women</span></div><div class="row-side"><span class="price">210.375đ</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><span class="headline">powerbank_1</span><span class="subline">PD 20W · home</span></div><div class="row-side"><span class="badge yellow">low-stock</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+            </div>
+          </div>
+
+          <div class="notice">Giữ nguyên `id` khi sửa. Nếu record đã xuất hiện trong orders thì ưu tiên draft thay vì xóa hẳn.</div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Nhập CSV</div>
+          <div class="cta primary">Thêm sản phẩm</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý danh mục</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý danh mục</div>
+          <div class="top-action">＋</div>
+        </div>
+        <div class="screen-body">
+          <div class="card">
+            <div class="section-title">Danh mục hiện có <span>categories</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>men</strong><span>áo nam, quần nam, basic wear</span></div><div class="row-side"><span class="badge orange">12 SP</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>women</strong><span>áo thun, chân váy, casual</span></div><div class="row-side"><span class="badge orange">8 SP</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>kids</strong><span>đồ trẻ em, phụ kiện</span></div><div class="row-side"><span class="badge blue">4 SP</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>beauty</strong><span>mỹ phẩm và chăm sóc cá nhân</span></div><div class="row-side"><span class="badge blue">6 SP</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>home</strong><span>gia dụng, phụ kiện số</span></div><div class="row-side"><span class="badge green">9 SP</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+            </div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="mini-card"><strong>Thứ tự hiển thị</strong><span>Sắp xếp category để Home và Search dùng cùng thứ tự.</span></div>
+            <div class="mini-card"><strong>Image key</strong><span>Giữ đúng key asset để card category không mất ảnh.</span></div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Sắp xếp lại</div>
+          <div class="cta primary">Thêm danh mục</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý banner</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý banner</div>
+          <div class="top-action">＋</div>
+        </div>
+        <div class="screen-body">
+          <div class="card">
+            <div class="section-title">Banner homepage <span>banners</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>banner_1</strong><span>hero campaign · vị trí 1</span></div><div class="row-side"><span class="badge green">active</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>banner_2</strong><span>month-end push · vị trí 2</span></div><div class="row-side"><span class="badge blue">draft</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="thumb"></div><div class="row-main"><strong>banner_3</strong><span>seasonal campaign · vị trí 3</span></div><div class="row-side"><span class="badge green">active</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+            </div>
+          </div>
+
+          <div class="card soft">
+            <div class="section-title">Quy tắc asset <span>marketing</span></div>
+            <div class="table-list">
+              <div class="list-row"><div class="row-main"><strong>Giữ đúng thứ tự banner</strong><span>Home đang đọc asset theo vị trí 1-2-3.</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>Không xóa asset đang active</strong><span>Đưa về draft trước rồi mới remove record.</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Đổi vị trí</div>
+          <div class="cta primary">Thêm banner</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý flash sale</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý flash sale</div>
+          <div class="top-action">＋</div>
+        </div>
+        <div class="screen-body">
+          <div class="summary-row">
+            <div class="summary-chip yellow"><strong>6</strong><span>record đang chạy</span></div>
+            <div class="summary-chip orange"><strong>40%</strong><span>mức off cao nhất</span></div>
+            <div class="summary-chip blue"><strong>18:00</strong><span>mốc đóng sale</span></div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Danh sách flash sale <span>flashSale</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="row-main"><strong>flash_01</strong><span>jeans_1 · off 40% · expire 18:00</span></div><div class="row-side"><span class="badge orange">đang chạy</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>flash_02</strong><span>shirt_1 · off 35% · expire 18:00</span></div><div class="row-side"><span class="badge orange">đang chạy</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>flash_03</strong><span>powerbank_1 · off 18% · expire 21:00</span></div><div class="row-side"><span class="badge blue">sắp mở</span><div class="tiny-actions"><span class="tiny-btn fill">Sửa</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+            </div>
+          </div>
+
+          <div class="notice">Flash sale tác động trực tiếp tới badge giảm giá và section `Flash Sale` trên Home. Luôn kiểm tra giờ hết hạn trước khi lưu.</div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Xem timer</div>
+          <div class="cta primary">Thêm flash sale</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý đơn hàng</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý đơn hàng</div>
+          <div class="top-action">⋯</div>
+        </div>
+        <div class="screen-body">
+          <div class="summary-row">
+            <div class="summary-chip yellow"><strong>12</strong><span>pending</span></div>
+            <div class="summary-chip green"><strong>8</strong><span>paid</span></div>
+            <div class="summary-chip orange"><strong>4</strong><span>cần rà soát</span></div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-pill active">Chờ xử lý</div>
+            <div class="filter-pill">Đã thanh toán</div>
+            <div class="filter-pill">Hoàn tất</div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Đơn hàng gần đây <span>orders</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="row-main"><strong>order_2048</strong><span>uid_02 · ShoppePay · 31/03/2026</span></div><div class="row-side"><span class="price">103.000đ</span><div class="tiny-actions"><span class="tiny-btn">Chi tiết</span><span class="tiny-btn fill">Cập nhật</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>order_2041</strong><span>uid_01 · COD · 31/03/2026</span></div><div class="row-side"><span class="badge yellow">pending</span><div class="tiny-actions"><span class="tiny-btn">Chi tiết</span><span class="tiny-btn fill">Duyệt</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>order_2035</strong><span>uid_05 · ShoppePay · 30/03/2026</span></div><div class="row-side"><span class="badge green">paid</span><div class="tiny-actions"><span class="tiny-btn">Chi tiết</span><span class="tiny-btn">In</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>order_2018</strong><span>uid_08 · Card · 29/03/2026</span></div><div class="row-side"><span class="badge red">failed</span><div class="tiny-actions"><span class="tiny-btn">Chi tiết</span><span class="tiny-btn danger">Xóa</span></div></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Quản lý người dùng</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Quản lý người dùng</div>
+          <div class="top-action">⋯</div>
+        </div>
+        <div class="screen-body">
+          <div class="card">
+            <div class="section-title">Tài khoản người dùng <span>users</span></div>
+            <div class="stack">
+              <div class="list-row"><div class="row-main"><strong>uid_01</strong><span>favorites 5 · cart 2 · orders 4</span></div><div class="row-side"><div class="tiny-actions"><span class="tiny-btn">Xem</span><span class="tiny-btn fill">Sửa</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>uid_02</strong><span>favorites 1 · cart 1 · orders 2</span></div><div class="row-side"><div class="tiny-actions"><span class="tiny-btn">Xem</span><span class="tiny-btn fill">Sửa</span></div></div></div>
+              <div class="list-row"><div class="row-main"><strong>uid_05</strong><span>favorites 3 · cart 0 · orders 6</span></div><div class="row-side"><div class="tiny-actions"><span class="tiny-btn">Xem</span><span class="tiny-btn fill">Khóa</span></div></div></div>
+            </div>
+          </div>
+
+          <div class="card soft">
+            <div class="section-title">Subcollection theo uid <span>cẩn thận</span></div>
+            <div class="table-list">
+              <div class="list-row"><div class="row-main"><strong>favorites</strong><span>Không đổi productId nếu record vẫn tồn tại.</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>cart</strong><span>Chỉ sửa quantity hoặc variant đã chọn.</span></div></div>
+              <div class="list-row"><div class="row-main"><strong>orders</strong><span>Luôn tôn trọng lịch sử thanh toán và giao hàng.</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Thêm sản phẩm</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Thêm sản phẩm</div>
+          <div class="top-action">✓</div>
+        </div>
+        <div class="screen-body">
+          <div class="field"><label>ID</label><div class="input">product_new_01</div></div>
+          <div class="field"><label>Tên sản phẩm</label><div class="input">Tên sản phẩm mới</div></div>
+          <div class="field"><label>Danh mục</label><div class="input">men</div></div>
+          <div class="field"><label>Giá bán</label><div class="input">0</div></div>
+          <div class="field"><label>Giá cũ</label><div class="input">0</div></div>
+          <div class="field"><label>Image key</label><div class="input">product_new.png</div></div>
+          <div class="field"><label>Mô tả ngắn</label><div class="textarea">Nhập mô tả ngắn để dùng cho card sản phẩm và chi tiết sản phẩm.</div></div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Lưu nháp</div>
+          <div class="cta primary">Tạo sản phẩm</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Sửa sản phẩm</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Sửa sản phẩm</div>
+          <div class="top-action">✓</div>
+        </div>
+        <div class="screen-body">
+          <div class="field"><label>ID</label><div class="input">powerbank_1</div></div>
+          <div class="field"><label>Tên sản phẩm</label><div class="input">USAMS Power Bank Sạc nhanh PD 20W</div></div>
+          <div class="field"><label>Danh mục</label><div class="input">home</div></div>
+          <div class="field"><label>Giá bán</label><div class="input">295510</div></div>
+          <div class="field"><label>Giá cũ</label><div class="input">420000</div></div>
+          <div class="field"><label>Image key</label><div class="input">product_powerbank.png</div></div>
+          <div class="field"><label>Trạng thái</label><div class="input">low-stock</div></div>
+          <div class="field"><label>Mô tả ngắn</label><div class="textarea">Sạc nhanh PD 20W, pin dự phòng dung lượng lớn, ưu tiên hiển thị trong home và detail.</div></div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Hủy</div>
+          <div class="cta primary">Lưu thay đổi</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Thêm banner</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Thêm banner</div>
+          <div class="top-action">✓</div>
+        </div>
+        <div class="screen-body">
+          <div class="field"><label>ID</label><div class="input">banner_4</div></div>
+          <div class="field"><label>Image key</label><div class="input">banner_4.png</div></div>
+          <div class="field"><label>Vị trí hiển thị</label><div class="input">4</div></div>
+          <div class="field"><label>Trạng thái</label><div class="input">draft</div></div>
+          <div class="field"><label>Link chuyển hướng</label><div class="input">/promo/month-end</div></div>
+          <div class="field"><label>Ghi chú campaign</label><div class="textarea">Banner dùng cho đợt đẩy doanh số cuối tháng, sau đó chuyển về draft.</div></div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Lưu nháp</div>
+          <div class="cta primary">Tạo banner</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Sửa flash sale</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Sửa flash sale</div>
+          <div class="top-action">✓</div>
+        </div>
+        <div class="screen-body">
+          <div class="field"><label>ID</label><div class="input">flash_01</div></div>
+          <div class="field"><label>productId</label><div class="input">jeans_1</div></div>
+          <div class="field"><label>Phần trăm giảm</label><div class="input">40</div></div>
+          <div class="field"><label>Giờ bắt đầu</label><div class="input">09:00</div></div>
+          <div class="field"><label>Giờ kết thúc</label><div class="input">18:00</div></div>
+          <div class="field"><label>Trạng thái</label><div class="input">active</div></div>
+          <div class="field"><label>Ghi chú</label><div class="textarea">Flash sale ưu tiên hiển thị trong section đầu của Home và giữ đồng bộ badge giảm giá.</div></div>
+        </div>
+        <div class="footer-bar">
+          <div class="cta ghost">Tắt sale</div>
+          <div class="cta primary">Lưu sale</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="frame-group">
+      <p class="frame-caption">Xóa bản ghi</p>
+      <article class="screen">
+        <div class="status-bar"><span>5:10</span><span class="status-icons">▮▮▮ ))) ◔</span></div>
+        <div class="topbar">
+          <div class="nav-icon">‹</div>
+          <div class="title">Xác nhận xóa</div>
+          <div class="top-action">⋯</div>
+        </div>
+        <div class="modal-stage">
+          <div class="modal-card">
+            <h3>Xóa product `hoodie_1`?</h3>
+            <p>Record này đang xuất hiện trong listing và có thể đã được lưu trong favorites. Chỉ xóa khi bạn chắc chắn không còn phụ thuộc nào nữa.</p>
+            <div class="card soft" style="margin-bottom: 12px;">
+              <div class="table-list">
+                <div class="list-row"><div class="row-main"><strong>Ảnh hưởng</strong><span>Home, Search, Product detail</span></div></div>
+                <div class="list-row"><div class="row-main"><strong>Khuyến nghị</strong><span>Chuyển draft trước khi xóa hẳn.</span></div></div>
+              </div>
+            </div>
+            <div class="footer-bar" style="padding: 0; border-top: 0;">
+              <div class="cta ghost">Hủy</div>
+              <div class="cta primary" style="background: #ef4444;">Xóa bản ghi</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
