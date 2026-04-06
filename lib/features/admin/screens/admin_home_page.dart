@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/shop_models.dart';
 import '../../../services/shop_repository.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({
     required this.repository,
     required this.userId,
+    required this.onOpenModule,
+    required this.onGoHome,
     super.key,
   });
 
   final ShopRepository repository;
   final String userId;
+  final ValueChanged<int> onOpenModule;
+  final VoidCallback onGoHome;
 
   @override
   State<AdminHomePage> createState() => _AdminHomePageState();
@@ -84,6 +87,27 @@ class _AdminHomePageState extends State<AdminHomePage> {
           ),
           const SizedBox(height: 10),
 
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: widget.onGoHome,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFea580c)),
+                foregroundColor: const Color(0xFFea580c),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              icon: const Icon(Icons.home_outlined, size: 16),
+              label: const Text(
+                'Về trang chủ',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
           // Management modules
           _AdminSection(
             title: 'Chức năng quản lý',
@@ -95,13 +119,43 @@ class _AdminHomePageState extends State<AdminHomePage> {
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
               childAspectRatio: 1.2,
-              children: const [
-                _ModuleCard(name: 'Sản phẩm', desc: '4 record đang bán', badge: 'CRUD'),
-                _ModuleCard(name: 'Danh mục', desc: '5 nhóm chính', badge: 'Sort'),
-                _ModuleCard(name: 'Banner', desc: '3 asset homepage', badge: 'Active'),
-                _ModuleCard(name: 'Flash sale', desc: '6 record giảm giá', badge: 'Timer'),
-                _ModuleCard(name: 'Đơn hàng', desc: '24 đơn gần nhất', badge: 'Theo dõi'),
-                _ModuleCard(name: 'Người dùng', desc: '18 tài khoản', badge: 'Cẩn thận'),
+              children: [
+                _ModuleCard(
+                  name: 'Sản phẩm',
+                  desc: '4 record đang bán',
+                  badge: 'CRUD',
+                  onTap: () => widget.onOpenModule(1),
+                ),
+                _ModuleCard(
+                  name: 'Danh mục',
+                  desc: '5 nhóm chính',
+                  badge: 'Sort',
+                  onTap: () => widget.onOpenModule(2),
+                ),
+                _ModuleCard(
+                  name: 'Banner',
+                  desc: '3 asset homepage',
+                  badge: 'Active',
+                  onTap: () => widget.onOpenModule(3),
+                ),
+                _ModuleCard(
+                  name: 'Flash sale',
+                  desc: '6 record giảm giá',
+                  badge: 'Timer',
+                  onTap: () => widget.onOpenModule(4),
+                ),
+                _ModuleCard(
+                  name: 'Đơn hàng',
+                  desc: '24 đơn gần nhất',
+                  badge: 'Theo dõi',
+                  onTap: () => widget.onOpenModule(5),
+                ),
+                _ModuleCard(
+                  name: 'Người dùng',
+                  desc: '18 tài khoản',
+                  badge: 'Cẩn thận',
+                  onTap: () => widget.onOpenModule(6),
+                ),
               ],
             ),
           ),
@@ -117,18 +171,22 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 _QuickAction(
                   title: 'Thêm sản phẩm mới',
                   desc: 'Tạo record mới cho bảng products',
+                  onTap: () => widget.onOpenModule(1),
                 ),
                 _QuickAction(
                   title: 'Tạo banner chiến dịch',
                   desc: 'Thêm asset mới cho homepage',
+                  onTap: () => widget.onOpenModule(3),
                 ),
                 _QuickAction(
                   title: 'Sửa flash sale',
                   desc: 'Điều chỉnh off %, thời gian, trạng thái',
+                  onTap: () => widget.onOpenModule(4),
                 ),
                 _QuickAction(
                   title: 'Rà soát người dùng',
                   desc: 'Kiểm tra favorites, cart, orders theo uid',
+                  onTap: () => widget.onOpenModule(6),
                   isLast: true,
                 ),
               ],
@@ -232,10 +290,7 @@ class _AdminSection extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            color: bgColor,
-            child: child,
-          ),
+          Container(color: bgColor, child: child),
         ],
       ),
     );
@@ -247,56 +302,71 @@ class _ModuleCard extends StatelessWidget {
     required this.name,
     required this.desc,
     required this.badge,
+    required this.onTap,
   });
 
   final String name;
   final String desc;
   final String badge;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFECECEC)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFECECEC)),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 4),
-          Text(
-            desc,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF7a7a7a)),
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Badge(label: badge),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFfff2e8),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFFffd2b1)),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-                child: const Text(
-                  'Mở',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFea580c),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF7a7a7a)),
+              ),
+              const Spacer(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _Badge(label: badge),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFfff2e8),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFffd2b1)),
+                    ),
+                    child: const Text(
+                      'Mở',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFea580c),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -353,64 +423,75 @@ class _QuickAction extends StatelessWidget {
   const _QuickAction({
     required this.title,
     required this.desc,
+    required this.onTap,
     this.isLast = false,
   });
 
   final String title;
   final String desc;
+  final VoidCallback onTap;
   final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          desc,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF7a7a7a),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      desc,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF7a7a7a),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFfff2e8),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFFffd2b1)),
-                ),
-                child: const Text(
-                  'Thêm',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFea580c),
                   ),
-                ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFfff2e8),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFffd2b1)),
+                    ),
+                    child: const Text(
+                      'Mở',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFea580c),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            if (!isLast) const Divider(height: 1, indent: 12, endIndent: 12),
+          ],
         ),
-        if (!isLast) const Divider(height: 1, indent: 12, endIndent: 12),
-      ],
+      ),
     );
   }
 }

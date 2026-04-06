@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/shop_models.dart';
 
 class ShopRepository {
-  ShopRepository(this._firestore);
+  ShopRepository(this._firestore) : _storage = FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
 
   Stream<List<PromoBanner>> banners() {
     return _firestore
@@ -111,7 +115,10 @@ class ShopRepository {
         .doc(product.id);
     final snapshot = await ref.get();
     final quantity = ((snapshot.data()?['quantity'] as num?)?.toInt() ?? 0) + 1;
-    await ref.set(product.toUserMap(quantity: quantity), SetOptions(merge: true));
+    await ref.set(
+      product.toUserMap(quantity: quantity),
+      SetOptions(merge: true),
+    );
   }
 
   Future<void> updateCartQuantity(
@@ -165,13 +172,15 @@ class ShopRepository {
       'address':
           '431/71/1a Hà Thanh Lộc, Phường Thạnh Lộc, Quận 12, TP.Hồ Chí Minh',
       'items': items
-          .map((item) => {
-                'productId': item.productId,
-                'name': item.name,
-                'image': item.image,
-                'price': item.price,
-                'quantity': item.quantity,
-              })
+          .map(
+            (item) => {
+              'productId': item.productId,
+              'name': item.name,
+              'image': item.image,
+              'price': item.price,
+              'quantity': item.quantity,
+            },
+          )
           .toList(),
       'total': total,
       'paymentMethod': 'ShoppePay',
@@ -210,9 +219,64 @@ class ShopRepository {
     return snapshot.docs.map(ShopCategory.fromDoc).toList();
   }
 
-  Future<List<ShopOrder>> getOrders() async {
-    final snapshot = await _firestore.collectionGroup('orders').get();
-    return snapshot.docs.map(ShopOrder.fromDoc).toList();
+  Future<List<ShopOrder>> getOrders({String? requesterUserId}) async {
+    final List<ShopOrder> orders = [];
+
+    Future<List<ShopOrder>> readByUsersScan() async {
+      final usersSnapshot = await _firestore.collection('users').get();
+      final List<ShopOrder> result = [];
+      for (final userDoc in usersSnapshot.docs) {
+        final orderSnapshot = await userDoc.reference
+            .collection('orders')
+            .get();
+        for (final doc in orderSnapshot.docs) {
+          result.add(ShopOrder.fromDoc(doc).copyWith(userId: userDoc.id));
+        }
+      }
+      return result;
+    }
+
+    Future<List<ShopOrder>> readByCollectionGroup() async {
+      final snapshot = await _firestore.collectionGroup('orders').get();
+      return snapshot.docs.map((doc) {
+        final userId = doc.reference.parent.parent?.id ?? '';
+        return ShopOrder.fromDoc(doc).copyWith(userId: userId);
+      }).toList();
+    }
+
+    Future<List<ShopOrder>> readOwnOrders(String userId) async {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('orders')
+          .get();
+      return snapshot.docs
+          .map((doc) => ShopOrder.fromDoc(doc).copyWith(userId: userId))
+          .toList();
+    }
+
+    try {
+      orders.addAll(await readByUsersScan());
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+      try {
+        orders.addAll(await readByCollectionGroup());
+      } on FirebaseException catch (e2) {
+        if (e2.code != 'permission-denied') rethrow;
+        if (requesterUserId != null && requesterUserId.isNotEmpty) {
+          orders.addAll(await readOwnOrders(requesterUserId));
+        } else {
+          rethrow;
+        }
+      }
+    }
+
+    orders.sort((a, b) {
+      final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+      final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+      return bTime.compareTo(aTime);
+    });
+    return orders;
   }
 
   Future<List<ShopBanner>> getBanners() async {
@@ -231,31 +295,29 @@ class ShopRepository {
   }
 
   Future<void> addProduct(ShopProduct product) async {
-    await _firestore
-        .collection('products')
-        .doc(product.id)
-        .set({
-          'id': product.id,
-          'name': product.name,
-          'price': product.price,
-          'oldPrice': product.oldPrice,
-          'image': product.image,
-          'categoryId': product.categoryId,
-          'description': product.description,
-          'soldText': product.soldText,
-        });
+    await _firestore.collection('products').doc(product.id).set({
+      'id': product.id,
+      'name': product.name,
+      'price': product.price,
+      'oldPrice': product.oldPrice,
+      'image': product.image,
+      'categoryId': product.categoryId,
+      'description': product.description,
+      'soldText': product.soldText,
+    });
   }
 
   Future<void> updateProduct(ShopProduct product) async {
-    await _firestore
-        .collection('products')
-        .doc(product.id)
-        .update({
-          'name': product.name,
-          'price': product.price,
-          'oldPrice': product.oldPrice,
-          'description': product.description,
-        });
+    await _firestore.collection('products').doc(product.id).update({
+      'name': product.name,
+      'price': product.price,
+      'oldPrice': product.oldPrice,
+      'categoryId': product.categoryId,
+      'image': product.image,
+      'imageKey': product.imageKey,
+      'soldText': product.soldText,
+      'description': product.description,
+    });
   }
 
   Future<void> deleteProduct(String productId) async {
@@ -263,21 +325,20 @@ class ShopRepository {
   }
 
   Future<void> addCategory(ShopCategory category) async {
-    await _firestore
-        .collection('categories')
-        .doc(category.id)
-        .set({
-          'id': category.id,
-          'name': category.name,
-          'image': category.image,
-        });
+    await _firestore.collection('categories').doc(category.id).set({
+      'id': category.id,
+      'name': category.name,
+      'image': category.image,
+      'description': category.description,
+    });
   }
 
   Future<void> updateCategory(ShopCategory category) async {
-    await _firestore
-        .collection('categories')
-        .doc(category.id)
-        .update({'name': category.name});
+    await _firestore.collection('categories').doc(category.id).update({
+      'name': category.name,
+      'image': category.image,
+      'description': category.description,
+    });
   }
 
   Future<void> deleteCategory(String categoryId) async {
@@ -285,10 +346,7 @@ class ShopRepository {
   }
 
   Future<void> addBanner(ShopBanner banner) async {
-    await _firestore
-        .collection('banners')
-        .doc(banner.id)
-        .set(banner.toMap());
+    await _firestore.collection('banners').doc(banner.id).set(banner.toMap());
   }
 
   Future<void> updateBanner(ShopBanner banner) async {
@@ -303,17 +361,11 @@ class ShopRepository {
   }
 
   Future<void> addFlashSale(ShopFlashSale sale) async {
-    await _firestore
-        .collection('flashSale')
-        .doc(sale.id)
-        .set(sale.toMap());
+    await _firestore.collection('flashSale').doc(sale.id).set(sale.toMap());
   }
 
   Future<void> updateFlashSale(ShopFlashSale sale) async {
-    await _firestore
-        .collection('flashSale')
-        .doc(sale.id)
-        .update(sale.toMap());
+    await _firestore.collection('flashSale').doc(sale.id).update(sale.toMap());
   }
 
   Future<void> deleteFlashSale(String saleId) async {
@@ -321,15 +373,49 @@ class ShopRepository {
   }
 
   Future<void> updateOrder(ShopOrder order) async {
-    // Find and update the order in user subcollection
-    final snapshot = await _firestore
-        .collectionGroup('orders')
-        .where('id', isEqualTo: order.id)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      await snapshot.docs.first.reference.update({'status': order.status});
+    if (order.userId.isNotEmpty) {
+      final directRef = _firestore
+          .collection('users')
+          .doc(order.userId)
+          .collection('orders')
+          .doc(order.id);
+      final directDoc = await directRef.get();
+      if (directDoc.exists) {
+        await directRef.update({'status': order.status});
+        return;
+      }
     }
+
+    final usersSnapshot = await _firestore.collection('users').get();
+    for (final userDoc in usersSnapshot.docs) {
+      final ref = userDoc.reference.collection('orders').doc(order.id);
+      final doc = await ref.get();
+      if (doc.exists) {
+        await ref.update({'status': order.status});
+        break;
+      }
+    }
+  }
+
+  Future<String> uploadAdminImage({
+    required Uint8List bytes,
+    required String folder,
+    required String fileName,
+  }) async {
+    final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final path = 'admin-assets/$folder/${now}_$safeName';
+    final ref = _storage.ref(path);
+    final metadata = SettableMetadata(contentType: _guessContentType(safeName));
+    await ref.putData(bytes, metadata);
+    return ref.getDownloadURL();
+  }
+
+  String _guessContentType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 }

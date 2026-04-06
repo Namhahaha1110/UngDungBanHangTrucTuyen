@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/shop_models.dart';
 import '../../../services/shop_repository.dart';
+import '../widgets/admin_loading_states.dart';
 
 class AdminSalesPage extends StatefulWidget {
   const AdminSalesPage({
@@ -64,11 +65,19 @@ class _AdminSalesPageState extends State<AdminSalesPage> {
               FutureBuilder<List<ShopFlashSale>>(
                 future: widget.repository.getFlashSales(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const AdminLoadingState();
+                  }
+
+                  if (snapshot.hasError) {
+                    return AdminErrorState(error: snapshot.error.toString());
                   }
 
                   var sales = snapshot.data ?? [];
+                  if (sales.isEmpty) {
+                    return const AdminEmptyState(title: 'Không có flash sale');
+                  }
+
                   return Column(
                     children: List.generate(sales.length, (idx) {
                       final sale = sales[idx];
@@ -88,7 +97,7 @@ class _AdminSalesPageState extends State<AdminSalesPage> {
 
         // FAB
         Positioned(
-          bottom: 16,
+          bottom: 76,
           right: 16,
           child: FloatingActionButton(
             onPressed: _showAddDialog,
@@ -356,100 +365,225 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.sale == null ? 'Thêm flash sale' : 'Sửa flash sale'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _FormField(label: 'Sản phẩm ID', controller: _productIdCtrl),
-            const SizedBox(height: 12),
-            _FormField(
-              label: 'Giảm giá (%)',
-              controller: _discountCtrl,
-              keyboardType: TextInputType.number,
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFECECEC))),
             ),
-            const SizedBox(height: 12),
-            _FormField(label: 'Thời gian bắt đầu', controller: _startTimeCtrl),
-            const SizedBox(height: 12),
-            _FormField(label: 'Thời gian kết thúc', controller: _endTimeCtrl),
-            const SizedBox(height: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Trạng thái',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                Text(
+                  widget.sale == null ? 'Thêm flash sale' : 'Sửa flash sale',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF171717),
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: ['inactive', 'active'].map((status) {
-                    return Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: _status == status ? const Color(0xFFfff2e8) : Colors.white,
-                          border: Border.all(
-                            color: _status == status ? const Color(0xFFffd2b1) : const Color(0xFFECECEC),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Text(
+                    '✕',
+                    style: TextStyle(fontSize: 20, color: Color(0xFF999999)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FormField(label: 'Sản phẩm ID', controller: _productIdCtrl),
+                  _FormField(
+                    label: 'Giảm giá (%)',
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                  ),
+                  _FormField(label: 'Thời gian bắt đầu', controller: _startTimeCtrl),
+                  _FormField(label: 'Thời gian kết thúc', controller: _endTimeCtrl),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          'Trạng thái',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF171717),
                           ),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => setState(() => _status = status),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(
-                                status == 'inactive' ? 'Inactive' : 'Active',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _status == status
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _status = 'inactive'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: _status == 'inactive'
                                       ? const Color(0xFFea580c)
-                                      : const Color(0xFF7a7a7a),
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: _status == 'inactive'
+                                        ? const Color(0xFFea580c)
+                                        : const Color(0xFFDDDDDD),
+                                  ),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(4),
+                                    bottomLeft: Radius.circular(4),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Inactive',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _status == 'inactive'
+                                          ? Colors.white
+                                          : const Color(0xFF999999),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _status = 'active'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: _status == 'active'
+                                      ? const Color(0xFFea580c)
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: _status == 'active'
+                                        ? const Color(0xFFea580c)
+                                        : const Color(0xFFDDDDDD),
+                                  ),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(4),
+                                    bottomRight: Radius.circular(4),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Active',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _status == 'active'
+                                          ? Colors.white
+                                          : const Color(0xFF999999),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFFECECEC))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFDDDDDD)),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Huỷ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF171717),
+                          ),
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final sale = ShopFlashSale(
+                        id: widget.sale?.id ?? DateTime.now().toString(),
+                        productId: _productIdCtrl.text,
+                        discountPercent: int.tryParse(_discountCtrl.text) ?? 0,
+                        startTime: _startTimeCtrl.text,
+                        endTime: _endTimeCtrl.text,
+                        status: _status,
+                      );
+
+                      if (widget.sale == null) {
+                        await widget.repository.addFlashSale(sale);
+                      } else {
+                        await widget.repository.updateFlashSale(sale);
+                      }
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        widget.onSave();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFea580c),
+                        border: Border.all(color: const Color(0xFFea580c)),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Lưu',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: Navigator.of(context).pop, child: const Text('Hủy')),
-        TextButton(
-          onPressed: () async {
-            final sale = ShopFlashSale(
-              id: widget.sale?.id ?? DateTime.now().toString(),
-              productId: _productIdCtrl.text,
-              discountPercent: int.tryParse(_discountCtrl.text) ?? 0,
-              startTime: _startTimeCtrl.text,
-              endTime: _endTimeCtrl.text,
-              status: _status,
-            );
-
-            if (widget.sale == null) {
-              await widget.repository.addFlashSale(sale);
-            } else {
-              await widget.repository.updateFlashSale(sale);
-            }
-
-            if (context.mounted) {
-              Navigator.pop(context);
-              widget.onSave();
-            }
-          },
-          child: const Text('Lưu', style: TextStyle(color: Color(0xFFea580c))),
-        ),
-      ],
     );
   }
 }
@@ -470,21 +604,38 @@ class _FormField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF171717),
+            ),
+          ),
         ),
-        const SizedBox(height: 4),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           maxLines: 1,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+            ),
           ),
         ),
+        const SizedBox(height: 12),
       ],
     );
   }

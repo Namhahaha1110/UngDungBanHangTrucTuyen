@@ -20,96 +20,155 @@ class AdminOrdersPage extends StatefulWidget {
 class _AdminOrdersPageState extends State<AdminOrdersPage> {
   String _selectedFilter = 'Tất cả';
 
+  String _normalizedStatus(String status) {
+    final value = status.toLowerCase().trim();
+    if (value == 'pending') return 'pending';
+    if (value == 'paid') return 'paid';
+    if (value == 'review') return 'review';
+    return value;
+  }
+
+  List<ShopOrder> _applyFilter(List<ShopOrder> orders) {
+    switch (_selectedFilter) {
+      case 'Chờ xử lý':
+        return orders
+            .where((order) => _normalizedStatus(order.status) == 'pending')
+            .toList();
+      case 'Đã thanh toán':
+        return orders
+            .where((order) => _normalizedStatus(order.status) == 'paid')
+            .toList();
+      default:
+        return orders;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Summary row
-          Row(
+      child: FutureBuilder<List<ShopOrder>>(
+        future: widget.repository.getOrders(requesterUserId: widget.userId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            final errorText = '${snapshot.error}';
+            final isPermissionDenied = errorText.contains('permission-denied');
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Text(
+                  isPermissionDenied
+                      ? 'Lỗi quyền truy cập đơn hàng. Kiểm tra users/{uid}.role=admin rồi đăng nhập lại.'
+                      : 'Lỗi: ${snapshot.error}',
+                ),
+              ),
+            );
+          }
+
+          final orders = snapshot.data ?? [];
+          final pendingCount = orders
+              .where((order) => _normalizedStatus(order.status) == 'pending')
+              .length;
+          final paidCount = orders
+              .where((order) => _normalizedStatus(order.status) == 'paid')
+              .length;
+          final reviewCount = orders
+              .where((order) => _normalizedStatus(order.status) == 'review')
+              .length;
+          final filteredOrders = _applyFilter(orders);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _SummaryChip(
-                  label: 'chờ xử lý',
-                  value: '12',
-                  bgColor: const Color(0xFFfff2e8),
-                  textColor: const Color(0xFFea580c),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryChip(
+                      label: 'chờ xử lý',
+                      value: '$pendingCount',
+                      bgColor: const Color(0xFFfff2e8),
+                      textColor: const Color(0xFFea580c),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _SummaryChip(
+                      label: 'đã thanh toán',
+                      value: '$paidCount',
+                      bgColor: const Color(0xFFeafaf0),
+                      textColor: const Color(0xFF12824a),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _SummaryChip(
+                      label: 'đang rà soát',
+                      value: '$reviewCount',
+                      bgColor: const Color(0xFFeff5ff),
+                      textColor: const Color(0xFF2563eb),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 32,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _FilterPill(
+                      label: 'Tất cả',
+                      isSelected: _selectedFilter == 'Tất cả',
+                      onTap: () => setState(() => _selectedFilter = 'Tất cả'),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterPill(
+                      label: 'Chờ xử lý',
+                      isSelected: _selectedFilter == 'Chờ xử lý',
+                      onTap: () =>
+                          setState(() => _selectedFilter = 'Chờ xử lý'),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterPill(
+                      label: 'Đã thanh toán',
+                      isSelected: _selectedFilter == 'Đã thanh toán',
+                      onTap: () =>
+                          setState(() => _selectedFilter = 'Đã thanh toán'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryChip(
-                  label: 'đã thanh toán',
-                  value: '8',
-                  bgColor: const Color(0xFFeafaf0),
-                  textColor: const Color(0xFF12824a),
+              const SizedBox(height: 10),
+              if (filteredOrders.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text('Không có đơn hàng theo bộ lọc đã chọn'),
+                  ),
+                )
+              else
+                Column(
+                  children: List.generate(filteredOrders.length, (idx) {
+                    final order = filteredOrders[idx];
+                    return _OrderListRow(
+                      order: order,
+                      onView: () => _showOrderDetail(order),
+                      onUpdate: () => _showUpdateDialog(order),
+                    );
+                  }),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _SummaryChip(
-                  label: 'đang rà soát',
-                  value: '4',
-                  bgColor: const Color(0xFFeff5ff),
-                  textColor: const Color(0xFF2563eb),
-                ),
-              ),
             ],
-          ),
-          const SizedBox(height: 10),
-
-          // Filter pills
-          SizedBox(
-            height: 32,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _FilterPill(
-                  label: 'Tất cả',
-                  isSelected: _selectedFilter == 'Tất cả',
-                  onTap: () => setState(() => _selectedFilter = 'Tất cả'),
-                ),
-                const SizedBox(width: 8),
-                _FilterPill(
-                  label: 'Chờ xử lý',
-                  isSelected: _selectedFilter == 'Chờ xử lý',
-                  onTap: () => setState(() => _selectedFilter = 'Chờ xử lý'),
-                ),
-                const SizedBox(width: 8),
-                _FilterPill(
-                  label: 'Đã thanh toán',
-                  isSelected: _selectedFilter == 'Đã thanh toán',
-                  onTap: () => setState(() => _selectedFilter = 'Đã thanh toán'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Order list
-          FutureBuilder<List<ShopOrder>>(
-            future: widget.repository.getOrders(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              var orders = snapshot.data ?? [];
-              return Column(
-                children: List.generate(orders.length, (idx) {
-                  final order = orders[idx];
-                  return _OrderListRow(
-                    order: order,
-                    onView: () => _showOrderDetail(order),
-                    onUpdate: () => _showUpdateDialog(order),
-                  );
-                }),
-              );
-            },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -137,7 +196,10 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: Navigator.of(context).pop, child: const Text('Đóng')),
+          TextButton(
+            onPressed: Navigator.of(context).pop,
+            child: const Text('Đóng'),
+          ),
         ],
       ),
     );
@@ -164,7 +226,10 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
             ],
           ),
           actions: [
-            TextButton(onPressed: Navigator.of(context).pop, child: const Text('Hủy')),
+            TextButton(
+              onPressed: Navigator.of(context).pop,
+              child: const Text('Hủy'),
+            ),
             TextButton(
               onPressed: () async {
                 final updatedOrder = order.copyWith(status: status);
@@ -174,7 +239,10 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   setState(() {});
                 }
               },
-              child: const Text('Cập nhật', style: TextStyle(color: Color(0xFFea580c))),
+              child: const Text(
+                'Cập nhật',
+                style: TextStyle(color: Color(0xFFea580c)),
+              ),
             ),
           ],
         ),
@@ -251,7 +319,9 @@ class _FilterPill extends StatelessWidget {
           color: isSelected ? const Color(0xFFfff2e8) : Colors.white,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSelected ? const Color(0xFFffd2b1) : const Color(0xFFECECEC),
+            color: isSelected
+                ? const Color(0xFFffd2b1)
+                : const Color(0xFFECECEC),
           ),
         ),
         child: Text(
@@ -259,7 +329,9 @@ class _FilterPill extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isSelected ? const Color(0xFFea580c) : const Color(0xFF7a7a7a),
+            color: isSelected
+                ? const Color(0xFFea580c)
+                : const Color(0xFF7a7a7a),
           ),
         ),
       ),
@@ -321,7 +393,10 @@ class _OrderListRow extends StatelessWidget {
               children: [
                 Text(
                   'Đơn #${order.id.substring(0, 8)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -329,7 +404,10 @@ class _OrderListRow extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: _getStatusColor(order.status),
                         borderRadius: BorderRadius.circular(999),

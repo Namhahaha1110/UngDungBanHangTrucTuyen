@@ -55,8 +55,22 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
           FutureBuilder<List<ShopUser>>(
             future: widget.repository.getUsers(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Text('Lỗi: ${snapshot.error}'),
+                  ),
+                );
               }
 
               var users = snapshot.data ?? [];
@@ -64,6 +78,15 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 users = users
                     .where((u) => u.uid.toLowerCase().contains(_searchQuery.toLowerCase()))
                     .toList();
+              }
+
+              if (users.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text('Không có người dùng'),
+                  ),
+                );
               }
 
               return Column(
