@@ -459,6 +459,133 @@ class ShopUser {
   }
 }
 
+class ShopVoucher {
+  ShopVoucher({
+    required this.id,
+    required this.code,
+    required this.title,
+    required this.type,
+    required this.discountType,
+    required this.discountValue,
+    required this.maxDiscount,
+    required this.minOrder,
+    required this.startTime,
+    required this.endTime,
+    required this.status,
+    this.quantity = 0,
+    this.usedCount = 0,
+    this.description = '',
+  });
+
+  final String id;
+  final String code;
+  final String title;
+  final String type; // shipping | shop
+  final String discountType; // fixed | percent
+  final int discountValue;
+  final int maxDiscount;
+  final int minOrder;
+  final String startTime; // yyyy-MM-dd HH:mm
+  final String endTime; // yyyy-MM-dd HH:mm
+  final String status; // active | inactive
+  final int quantity;
+  final int usedCount;
+  final String description;
+
+  String get displayTitle {
+    final raw = title.trim();
+    if (_looksCorrupted(raw) || raw.isEmpty) {
+      return type.trim().toLowerCase() == 'shipping'
+          ? 'Ma van chuyen'
+          : 'Ma giam gia/hoan xu';
+    }
+    return raw;
+  }
+
+  String get displayDescription {
+    final raw = description.trim();
+    if (_looksCorrupted(raw) || raw.isEmpty) {
+      return type.trim().toLowerCase() == 'shipping'
+          ? 'Giam phi van chuyen toi da 300k'
+          : 'Giam toi da 10k';
+    }
+    return raw;
+  }
+
+  factory ShopVoucher.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? <String, dynamic>{};
+    return ShopVoucher(
+      id: data['id'] as String? ?? doc.id,
+      code: data['code'] as String? ?? '',
+      title: data['title'] as String? ?? '',
+      type: data['type'] as String? ?? 'shop',
+      discountType: data['discountType'] as String? ?? 'fixed',
+      discountValue: (data['discountValue'] as num?)?.toInt() ?? 0,
+      maxDiscount: (data['maxDiscount'] as num?)?.toInt() ?? 0,
+      minOrder: (data['minOrder'] as num?)?.toInt() ?? 0,
+      startTime: data['startTime'] as String? ?? '',
+      endTime: data['endTime'] as String? ?? '',
+      status: data['status'] as String? ?? 'active',
+      quantity: (data['quantity'] as num?)?.toInt() ?? 0,
+      usedCount: (data['usedCount'] as num?)?.toInt() ?? 0,
+      description: data['description'] as String? ?? '',
+    );
+  }
+
+  ShopVoucher copyWith({
+    String? id,
+    String? code,
+    String? title,
+    String? type,
+    String? discountType,
+    int? discountValue,
+    int? maxDiscount,
+    int? minOrder,
+    String? startTime,
+    String? endTime,
+    String? status,
+    int? quantity,
+    int? usedCount,
+    String? description,
+  }) => ShopVoucher(
+    id: id ?? this.id,
+    code: code ?? this.code,
+    title: title ?? this.title,
+    type: type ?? this.type,
+    discountType: discountType ?? this.discountType,
+    discountValue: discountValue ?? this.discountValue,
+    maxDiscount: maxDiscount ?? this.maxDiscount,
+    minOrder: minOrder ?? this.minOrder,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    status: status ?? this.status,
+    quantity: quantity ?? this.quantity,
+    usedCount: usedCount ?? this.usedCount,
+    description: description ?? this.description,
+  );
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'code': code,
+    'title': title,
+    'type': type,
+    'discountType': discountType,
+    'discountValue': discountValue,
+    'maxDiscount': maxDiscount,
+    'minOrder': minOrder,
+    'startTime': startTime,
+    'endTime': endTime,
+    'status': status,
+    'quantity': quantity,
+    'usedCount': usedCount,
+    'description': description,
+  };
+
+  bool _looksCorrupted(String value) {
+    return value.contains('?') || value.contains('�');
+  }
+}
+
 class ShippingAddress {
   ShippingAddress({
     required this.id,

@@ -10,6 +10,7 @@ import 'screens/admin_orders_page.dart';
 import 'screens/admin_products_page.dart';
 import 'screens/admin_sales_page.dart';
 import 'screens/admin_users_page.dart';
+import 'screens/admin_vouchers_page.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({required this.repository, required this.userId, super.key});
@@ -32,17 +33,19 @@ class _AdminShellState extends State<AdminShell> {
     'Danh mục',
     'Banner',
     'Flash Sale',
+    'Voucher',
     'Đơn hàng',
     'Người dùng',
   ];
 
-  final List<String> _navIcons = ['◦', '☐', '▥', '⬚', '⚡', '📋', '👤'];
+  final List<String> _navIcons = ['◦', '☐', '▥', '⬚', '⚡', '🎟', '📋', '👤'];
   final List<String> _navLabels = [
     'Tổng quan',
     'Sản phẩm',
     'Danh mục',
     'Banner',
     'Flash Sale',
+    'Voucher',
     'Đơn hàng',
     'Người dùng',
   ];
@@ -131,6 +134,10 @@ class _AdminShellState extends State<AdminShell> {
                       repository: widget.repository,
                       userId: widget.userId,
                     ),
+                    AdminVouchersPage(
+                      repository: widget.repository,
+                      userId: widget.userId,
+                    ),
                     AdminOrdersPage(
                       repository: widget.repository,
                       userId: widget.userId,
@@ -150,7 +157,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   List<Widget> _buildDrawerItems() {
-    return List.generate(7, (index) {
+    return List.generate(8, (index) {
       final isActive = _currentIndex == index;
       return ListTile(
         leading: Text(
@@ -225,6 +232,13 @@ class _AdminShellState extends State<AdminShell> {
                 onTap: () {
                   Navigator.of(context).pop();
                   _openModule(3);
+                },
+              ),
+              _CreateActionTile(
+                label: 'Voucher',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _openModule(5);
                 },
               ),
               _CreateActionTile(

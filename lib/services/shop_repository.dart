@@ -43,21 +43,19 @@ class ShopRepository {
 
     controller = StreamController<List<ShopProduct>>(
       onListen: () {
-        productsSub = _firestore.collection('products').snapshots().listen(
-          (snapshot) {
-            latestProducts = snapshot.docs.map(ShopProduct.fromDoc).toList();
-            emit();
-          },
-          onError: controller.addError,
-        );
+        productsSub = _firestore.collection('products').snapshots().listen((
+          snapshot,
+        ) {
+          latestProducts = snapshot.docs.map(ShopProduct.fromDoc).toList();
+          emit();
+        }, onError: controller.addError);
 
-        flashSaleSub = _firestore.collection('flashSale').snapshots().listen(
-          (snapshot) {
-            latestSales = snapshot.docs.map(ShopFlashSale.fromDoc).toList();
-            emit();
-          },
-          onError: controller.addError,
-        );
+        flashSaleSub = _firestore.collection('flashSale').snapshots().listen((
+          snapshot,
+        ) {
+          latestSales = snapshot.docs.map(ShopFlashSale.fromDoc).toList();
+          emit();
+        }, onError: controller.addError);
       },
       onCancel: () async {
         await productsSub.cancel();
@@ -74,6 +72,14 @@ class ShopRepository {
         .orderBy('id')
         .snapshots()
         .map((snapshot) => snapshot.docs.map(ShopFlashSale.fromDoc).toList());
+  }
+
+  Stream<List<ShopVoucher>> vouchers() {
+    return _firestore
+        .collection('vouchers')
+        .orderBy('code')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(ShopVoucher.fromDoc).toList());
   }
 
   Future<void> ensureUserDocument(User user) async {
@@ -189,6 +195,9 @@ class ShopRepository {
     required List<UserProductItem> items,
     required String address,
     required String paymentMethod,
+    int voucherDiscount = 0,
+    String voucherSummary = '',
+    int? finalTotal,
   }) async {
     if (items.isEmpty) return;
     final orderRef = _firestore
@@ -218,6 +227,9 @@ class ShopRepository {
           )
           .toList(),
       'total': total,
+      'voucherDiscount': voucherDiscount,
+      'finalTotal': finalTotal ?? (total - voucherDiscount).clamp(0, 1 << 31),
+      'voucherSummary': voucherSummary,
       'paymentMethod': paymentMethod,
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -324,6 +336,11 @@ class ShopRepository {
     return snapshot.docs.map(ShopFlashSale.fromDoc).toList();
   }
 
+  Future<List<ShopVoucher>> getVouchers() async {
+    final snapshot = await _firestore.collection('vouchers').get();
+    return snapshot.docs.map(ShopVoucher.fromDoc).toList();
+  }
+
   Future<List<ShopUser>> getUsers() async {
     final snapshot = await _firestore.collection('users').get();
     return snapshot.docs.map(ShopUser.fromDoc).toList();
@@ -419,6 +436,24 @@ class ShopRepository {
     await _firestore.collection('flashSale').doc(saleId).delete();
   }
 
+  Future<void> addVoucher(ShopVoucher voucher) async {
+    await _firestore
+        .collection('vouchers')
+        .doc(voucher.id)
+        .set(voucher.toMap());
+  }
+
+  Future<void> updateVoucher(ShopVoucher voucher) async {
+    await _firestore
+        .collection('vouchers')
+        .doc(voucher.id)
+        .update(voucher.toMap());
+  }
+
+  Future<void> deleteVoucher(String voucherId) async {
+    await _firestore.collection('vouchers').doc(voucherId).delete();
+  }
+
   Future<void> updateOrder(ShopOrder order) async {
     if (order.userId.isNotEmpty) {
       final directRef = _firestore
@@ -502,45 +537,51 @@ class ShopRepository {
     required String userId,
     required ShippingAddress address,
   }) async {
-    final col = _firestore.collection('users').doc(userId).collection('addresses');
+    final col = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('addresses');
     final isNew = address.id.trim().isEmpty;
     final docRef = isNew ? col.doc() : col.doc(address.id);
 
     final existing = await col.get();
-    final hasAnyDefault = existing.docs.any((doc) => (doc.data()['isDefault'] as bool?) ?? false);
-    final shouldDefault = address.isDefault || (existing.docs.isEmpty && isNew) || !hasAnyDefault;
+    final hasAnyDefault = existing.docs.any(
+      (doc) => (doc.data()['isDefault'] as bool?) ?? false,
+    );
+    final shouldDefault =
+        address.isDefault || (existing.docs.isEmpty && isNew) || !hasAnyDefault;
 
     if (shouldDefault) {
       final batch = _firestore.batch();
       for (final doc in existing.docs) {
         batch.update(doc.reference, {'isDefault': false});
       }
-      batch.set(
-        docRef,
-        {
-          ...address.copyWith(id: docRef.id, isDefault: true).toMap(),
-          'createdAt': isNew ? FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(docRef, {
+        ...address.copyWith(id: docRef.id, isDefault: true).toMap(),
+        'createdAt': isNew
+            ? FieldValue.serverTimestamp()
+            : FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
       await batch.commit();
       return;
     }
 
-    await docRef.set(
-      {
-        ...address.copyWith(id: docRef.id, isDefault: false).toMap(),
-        'createdAt': isNew ? FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await docRef.set({
+      ...address.copyWith(id: docRef.id, isDefault: false).toMap(),
+      'createdAt': isNew
+          ? FieldValue.serverTimestamp()
+          : FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> setDefaultShippingAddress({
     required String userId,
     required String addressId,
   }) async {
-    final col = _firestore.collection('users').doc(userId).collection('addresses');
+    final col = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('addresses');
     final snapshot = await col.get();
     final batch = _firestore.batch();
     for (final doc in snapshot.docs) {
@@ -557,7 +598,10 @@ class ShopRepository {
     required String userId,
     required String addressId,
   }) async {
-    final col = _firestore.collection('users').doc(userId).collection('addresses');
+    final col = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('addresses');
     final doc = await col.doc(addressId).get();
     final wasDefault = (doc.data()?['isDefault'] as bool?) ?? false;
     await col.doc(addressId).delete();
@@ -644,10 +688,7 @@ class ShopRepository {
       final discounted = (basePrice * (100 - discount) / 100).round();
       final safePrice = discounted < 0 ? 0 : discounted;
 
-      return product.copyWith(
-        price: safePrice,
-        oldPrice: basePrice,
-      );
+      return product.copyWith(price: safePrice, oldPrice: basePrice);
     }).toList();
   }
 

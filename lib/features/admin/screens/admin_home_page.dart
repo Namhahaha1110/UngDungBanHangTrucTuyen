@@ -59,18 +59,25 @@ class _AdminHomePageState extends State<AdminHomePage> {
             moduleIndex: 4,
           ),
           _AdminModuleItem(
+            name: 'Voucher',
+            desc: '${stats.voucherCount} mã',
+            badge: 'Coupon',
+            keywords: 'voucher giam gia shipping code',
+            moduleIndex: 5,
+          ),
+          _AdminModuleItem(
             name: 'Đơn hàng',
             desc: '${stats.orderCount} đơn',
             badge: 'Theo dõi',
             keywords: 'don hang order orders',
-            moduleIndex: 5,
+            moduleIndex: 6,
           ),
           _AdminModuleItem(
             name: 'Người dùng',
             desc: '${stats.userCount} tài khoản',
             badge: 'Cẩn thận',
             keywords: 'nguoi dung user users role',
-            moduleIndex: 6,
+            moduleIndex: 7,
           ),
         ];
         final quickActions = [
@@ -93,21 +100,37 @@ class _AdminHomePageState extends State<AdminHomePage> {
             moduleIndex: 4,
           ),
           _AdminQuickActionItem(
+            title: 'Tạo voucher',
+            desc: 'Thiết lập mã giảm cho shop/vận chuyển',
+            keywords: 'voucher code giam gia shipping',
+            moduleIndex: 5,
+          ),
+          _AdminQuickActionItem(
             title: 'Rà soát người dùng',
             desc: 'Kiểm tra favorites, cart, orders theo uid',
             keywords: 'nguoi dung users review role',
-            moduleIndex: 6,
+            moduleIndex: 7,
           ),
         ];
         final query = _normalize(_searchQuery);
         final filteredModules = query.isEmpty
             ? modules
-            : modules.where((m) => _normalize('${m.name} ${m.desc} ${m.keywords}').contains(query)).toList();
+            : modules
+                  .where(
+                    (m) => _normalize(
+                      '${m.name} ${m.desc} ${m.keywords}',
+                    ).contains(query),
+                  )
+                  .toList();
         final filteredQuickActions = query.isEmpty
             ? quickActions
             : quickActions
-                .where((a) => _normalize('${a.title} ${a.desc} ${a.keywords}').contains(query))
-                .toList();
+                  .where(
+                    (a) => _normalize(
+                      '${a.title} ${a.desc} ${a.keywords}',
+                    ).contains(query),
+                  )
+                  .toList();
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(12),
@@ -125,15 +148,29 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   onChanged: (value) => setState(() => _searchQuery = value),
                   decoration: InputDecoration(
                     hintText: 'Tìm bảng, record hoặc mã đơn hàng',
-                    hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF7a7a7a)),
+                    hintStyle: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF7a7a7a),
+                    ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF7a7a7a)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: Color(0xFF7a7a7a),
+                    ),
                     suffixIcon: _searchQuery.trim().isEmpty
                         ? null
                         : IconButton(
                             onPressed: () => setState(() => _searchQuery = ''),
-                            icon: const Icon(Icons.close, size: 18, color: Color(0xFF7a7a7a)),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 18,
+                              color: Color(0xFF7a7a7a),
+                            ),
                           ),
                   ),
                 ),
@@ -277,6 +314,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       widget.repository.getCategories(),
       widget.repository.getBanners(),
       widget.repository.getFlashSales(),
+      widget.repository.getVouchers(),
       widget.repository.getOrders(requesterUserId: widget.userId),
       widget.repository.getUsers(),
     ]);
@@ -284,25 +322,31 @@ class _AdminHomePageState extends State<AdminHomePage> {
     final categories = results[1] as List;
     final banners = results[2] as List;
     final sales = results[3] as List;
-    final orders = results[4] as List;
-    final users = results[5] as List;
+    final vouchers = results[4] as List;
+    final orders = results[5] as List;
+    final users = results[6] as List;
 
     final pendingStatuses = {'pending', 'review', 'shipping'};
     final pendingOrderCount = orders.where((order) {
       final status = (order.status as String?)?.toLowerCase().trim() ?? '';
       return pendingStatuses.contains(status);
     }).length;
-    final outOfStock = products.where((product) => (product.stock as int? ?? 0) <= 0).length;
-    final inactiveSales = sales.where((sale) => (sale.status as String?) == 'inactive').length;
+    final outOfStock = products
+        .where((product) => (product.stock as int? ?? 0) <= 0)
+        .length;
+    final inactiveSales = sales
+        .where((sale) => (sale.status as String?) == 'inactive')
+        .length;
 
     return _AdminDashboardStats(
-      moduleCount: 6,
+      moduleCount: 7,
       pendingItems: pendingOrderCount,
       dataAlerts: outOfStock + inactiveSales,
       productCount: products.length,
       categoryCount: categories.length,
       bannerCount: banners.length,
       flashSaleCount: sales.length,
+      voucherCount: vouchers.length,
       orderCount: orders.length,
       userCount: users.length,
     );
@@ -348,6 +392,7 @@ class _AdminDashboardStats {
     required this.categoryCount,
     required this.bannerCount,
     required this.flashSaleCount,
+    required this.voucherCount,
     required this.orderCount,
     required this.userCount,
   });
@@ -359,17 +404,19 @@ class _AdminDashboardStats {
   final int categoryCount;
   final int bannerCount;
   final int flashSaleCount;
+  final int voucherCount;
   final int orderCount;
   final int userCount;
 
   factory _AdminDashboardStats.empty() => const _AdminDashboardStats(
-    moduleCount: 6,
+    moduleCount: 7,
     pendingItems: 0,
     dataAlerts: 0,
     productCount: 0,
     categoryCount: 0,
     bannerCount: 0,
     flashSaleCount: 0,
+    voucherCount: 0,
     orderCount: 0,
     userCount: 0,
   );
@@ -572,6 +619,10 @@ class _Badge extends StatelessWidget {
       case 'Active':
         bgColor = const Color(0xFFeafaf0);
         textColor = const Color(0xFF12824a);
+        break;
+      case 'Coupon':
+        bgColor = const Color(0xFFfff2e8);
+        textColor = const Color(0xFFea580c);
         break;
       default:
         bgColor = const Color(0xFFfff1f1);

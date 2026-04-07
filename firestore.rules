@@ -39,6 +39,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /vouchers/{voucherId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId);

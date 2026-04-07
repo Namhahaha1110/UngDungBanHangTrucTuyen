@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/shop_models.dart';
 import '../../services/auth_service.dart';
@@ -300,7 +301,8 @@ class _HomeTab extends StatelessWidget {
                 return StreamBuilder<List<ShopProduct>>(
                   stream: repository.products(),
                   builder: (context, productSnapshot) {
-                    final products = productSnapshot.data ?? const <ShopProduct>[];
+                    final products =
+                        productSnapshot.data ?? const <ShopProduct>[];
                     final flashProducts = products
                         .where((p) => sales.any((s) => s.productId == p.id))
                         .take(6)
@@ -314,7 +316,9 @@ class _HomeTab extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             child: Container(
                               height: 27,
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFE2D1),
                                 borderRadius: BorderRadius.circular(14),
@@ -803,6 +807,217 @@ class WishlistPageWrapper extends StatelessWidget {
   }
 }
 
+class ProfileVouchersPage extends StatelessWidget {
+  const ProfileVouchersPage({
+    required this.repository,
+    required this.userId,
+    super.key,
+  });
+
+  final ShopRepository repository;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Voucher của tôi'), centerTitle: true),
+      body: FutureBuilder<List<ShopVoucher>>(
+        future: repository.getVouchers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('Lỗi tải voucher: ${snapshot.error}'),
+              ),
+            );
+          }
+          final vouchers =
+              (snapshot.data ?? const <ShopVoucher>[])
+                  .where(_isActiveVoucher)
+                  .toList()
+                ..sort((a, b) => a.code.compareTo(b.code));
+          if (vouchers.isEmpty) {
+            return const _EmptyState(
+              icon: Icons.confirmation_num_outlined,
+              title: 'Chưa có voucher khả dụng',
+              message: 'Voucher sẽ hiển thị tại đây khi đang hoạt động.',
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+            itemCount: vouchers.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final voucher = vouchers[index];
+              final isShipping =
+                  voucher.type.trim().toLowerCase() == 'shipping';
+              final discountLabel = _voucherDiscountLabel(voucher);
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFECECEC)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: isShipping
+                            ? const Color(0xFF00C853)
+                            : AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          isShipping ? 'FREE\nSHIP' : 'shoppe',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${voucher.code} • ${voucher.displayTitle}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            discountLabel,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Đơn tối thiểu ${formatCurrency(voucher.minOrder)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Hiệu lực: ${voucher.startTime} - ${voucher.endTime}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              OutlinedButton(
+                                onPressed: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: voucher.code),
+                                  );
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Đã sao chép mã ${voucher.code}',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 34),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                ),
+                                child: const Text('Sao chép mã'),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Voucher sẽ tự áp dụng ở màn Thanh toán',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(0, 34),
+                                  ),
+                                  child: const Text('Dùng ngay'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  bool _isActiveVoucher(ShopVoucher voucher) {
+    if (voucher.status.trim().toLowerCase() != 'active') return false;
+    if (voucher.quantity > 0 && voucher.usedCount >= voucher.quantity) {
+      return false;
+    }
+    final now = DateTime.now();
+    final start = _parseDateTime(voucher.startTime);
+    final end = _parseDateTime(voucher.endTime);
+    if (start != null && now.isBefore(start)) return false;
+    if (end != null && now.isAfter(end)) return false;
+    return true;
+  }
+
+  DateTime? _parseDateTime(String value) {
+    final raw = value.trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw.replaceFirst(' ', 'T'));
+  }
+
+  String _voucherDiscountLabel(ShopVoucher voucher) {
+    final isPercent = voucher.discountType.trim().toLowerCase() == 'percent';
+    if (isPercent) {
+      if (voucher.maxDiscount > 0) {
+        return 'Giảm ${voucher.discountValue}% tối đa ${formatCurrency(voucher.maxDiscount)}';
+      }
+      return 'Giảm ${voucher.discountValue}%';
+    }
+    if (voucher.maxDiscount > 0 &&
+        voucher.maxDiscount != voucher.discountValue) {
+      return 'Giảm ${formatCurrency(voucher.discountValue)} tối đa ${formatCurrency(voucher.maxDiscount)}';
+    }
+    return 'Giảm ${formatCurrency(voucher.discountValue)}';
+  }
+}
+
 class _CartTab extends StatelessWidget {
   const _CartTab({required this.repository, required this.userId});
 
@@ -1072,10 +1287,8 @@ class _ProfileTab extends StatelessWidget {
                 GestureDetector(
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => OrdersPage(
-                        repository: repository,
-                        userId: user.uid,
-                      ),
+                      builder: (_) =>
+                          OrdersPage(repository: repository, userId: user.uid),
                     ),
                   ),
                   child: Container(
@@ -1237,11 +1450,14 @@ class _ProfileTab extends StatelessWidget {
               _MenuTile(
                 icon: Icons.confirmation_num_outlined,
                 label: 'Voucher',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tính năng đang phát triển')),
-                  );
-                },
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ProfileVouchersPage(
+                      repository: repository,
+                      userId: user.uid,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1336,10 +1552,7 @@ class _MenuTile extends StatelessWidget {
 }
 
 class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
-    required this.category,
-    this.onTap,
-  });
+  const _CategoryCard({required this.category, this.onTap});
 
   final ShopCategory category;
   final VoidCallback? onTap;
@@ -1424,9 +1637,7 @@ class _CategoryProductsPage extends StatelessWidget {
               .toList();
 
           if (products.isEmpty) {
-            return const Center(
-              child: Text('Danh mục này chưa có sản phẩm'),
-            );
+            return const Center(child: Text('Danh mục này chưa có sản phẩm'));
           }
 
           return ListView.separated(
