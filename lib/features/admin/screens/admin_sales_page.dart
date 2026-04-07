@@ -28,40 +28,6 @@ class _AdminSalesPageState extends State<AdminSalesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Summary row
-              Row(
-                children: [
-                  Expanded(
-                    child: _SummaryChip(
-                      label: 'đang chạy',
-                      value: '6',
-                      bgColor: const Color(0xFFeafaf0),
-                      textColor: const Color(0xFF12824a),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _SummaryChip(
-                      label: 'mức off cao nhất',
-                      value: '40%',
-                      bgColor: const Color(0xFFfff1f1),
-                      textColor: const Color(0xFFd12626),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _SummaryChip(
-                      label: 'đóng lúc',
-                      value: '18:00',
-                      bgColor: const Color(0xFFfff2e8),
-                      textColor: const Color(0xFFea580c),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Flash sale list
               FutureBuilder<List<ShopFlashSale>>(
                 future: widget.repository.getFlashSales(),
                 builder: (context, snapshot) {
@@ -78,15 +44,71 @@ class _AdminSalesPageState extends State<AdminSalesPage> {
                     return const AdminEmptyState(title: 'Không có flash sale');
                   }
 
+                  final now = DateTime.now();
+                  final runningCount = sales.where((sale) {
+                    final start = _parseDateTime(sale.startTime);
+                    final end = _parseDateTime(sale.endTime);
+                    if (sale.status != 'active') return false;
+                    if (start == null || end == null) return true;
+                    return now.isAfter(start) && now.isBefore(end);
+                  }).length;
+                  final maxDiscount = sales.fold<int>(
+                    0,
+                    (maxValue, sale) =>
+                        sale.discountPercent > maxValue ? sale.discountPercent : maxValue,
+                  );
+                  final upcomingEnds = sales
+                      .map((s) => _parseDateTime(s.endTime))
+                      .whereType<DateTime>()
+                      .where((d) => d.isAfter(now))
+                      .toList()
+                    ..sort((a, b) => a.compareTo(b));
+                  final nextEndLabel = upcomingEnds.isEmpty
+                      ? '--:--'
+                      : _formatDateTimeLabel(upcomingEnds.first);
+
                   return Column(
-                    children: List.generate(sales.length, (idx) {
-                      final sale = sales[idx];
-                      return _FlashSaleListRow(
-                        sale: sale,
-                        onEdit: () => _showEditDialog(sale),
-                        onDelete: () => _showDeleteDialog(sale),
-                      );
-                    }),
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SummaryChip(
+                              label: 'đang chạy',
+                              value: '$runningCount',
+                              bgColor: const Color(0xFFeafaf0),
+                              textColor: const Color(0xFF12824a),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _SummaryChip(
+                              label: 'mức off cao nhất',
+                              value: '$maxDiscount%',
+                              bgColor: const Color(0xFFfff1f1),
+                              textColor: const Color(0xFFd12626),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _SummaryChip(
+                              label: 'đóng lúc',
+                              value: nextEndLabel,
+                              bgColor: const Color(0xFFfff2e8),
+                              textColor: const Color(0xFFea580c),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...List.generate(sales.length, (idx) {
+                        final sale = sales[idx];
+                        return _FlashSaleListRow(
+                          sale: sale,
+                          onEdit: () => _showEditDialog(sale),
+                          onDelete: () => _showDeleteDialog(sale),
+                        );
+                      }),
+                    ],
                   );
                 },
               ),
@@ -151,6 +173,28 @@ class _AdminSalesPageState extends State<AdminSalesPage> {
         ],
       ),
     );
+  }
+
+  DateTime? _parseDateTime(String value) {
+    if (value.trim().isEmpty) return null;
+    final normalized = value.trim().replaceFirst(' ', 'T');
+    final parsed = DateTime.tryParse(normalized);
+    if (parsed != null) return parsed;
+    final pieces = value.split(':');
+    if (pieces.length == 2) {
+      final hour = int.tryParse(pieces[0]);
+      final minute = int.tryParse(pieces[1]);
+      if (hour != null && minute != null) {
+        final now = DateTime.now();
+        return DateTime(now.year, now.month, now.day, hour, minute);
+      }
+    }
+    return null;
+  }
+
+  String _formatDateTimeLabel(DateTime dt) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(dt.day)}/${two(dt.month)} ${two(dt.hour)}:${two(dt.minute)}';
   }
 }
 
@@ -343,6 +387,7 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
   late TextEditingController _startTimeCtrl;
   late TextEditingController _endTimeCtrl;
   late String _status;
+  List<ShopProduct> _products = const [];
 
   @override
   void initState() {
@@ -352,6 +397,7 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
     _startTimeCtrl = TextEditingController(text: widget.sale?.startTime ?? '');
     _endTimeCtrl = TextEditingController(text: widget.sale?.endTime ?? '');
     _status = widget.sale?.status ?? 'active';
+    _loadProducts();
   }
 
   @override
@@ -403,14 +449,22 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _FormField(label: 'Sản phẩm ID', controller: _productIdCtrl),
+                  _buildProductPicker(),
                   _FormField(
                     label: 'Giảm giá (%)',
                     controller: _discountCtrl,
                     keyboardType: TextInputType.number,
                   ),
-                  _FormField(label: 'Thời gian bắt đầu', controller: _startTimeCtrl),
-                  _FormField(label: 'Thời gian kết thúc', controller: _endTimeCtrl),
+                  _DateTimeField(
+                    label: 'Thời gian bắt đầu',
+                    controller: _startTimeCtrl,
+                    onPick: () => _pickDateTime(_startTimeCtrl),
+                  ),
+                  _DateTimeField(
+                    label: 'Thời gian kết thúc',
+                    controller: _endTimeCtrl,
+                    onPick: () => _pickDateTime(_endTimeCtrl),
+                  ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -539,12 +593,33 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
+                      final productId = _productIdCtrl.text.trim();
+                      if (productId.isEmpty) {
+                        _showError('Bạn chưa chọn sản phẩm');
+                        return;
+                      }
+                      final discount = int.tryParse(_discountCtrl.text.trim()) ?? 0;
+                      if (discount <= 0) {
+                        _showError('Giảm giá phải lớn hơn 0');
+                        return;
+                      }
+                      final start = _parseDateTime(_startTimeCtrl.text.trim());
+                      final end = _parseDateTime(_endTimeCtrl.text.trim());
+                      if (start == null || end == null) {
+                        _showError('Chọn đầy đủ ngày giờ bắt đầu và kết thúc');
+                        return;
+                      }
+                      if (!end.isAfter(start)) {
+                        _showError('Thời gian kết thúc phải sau thời gian bắt đầu');
+                        return;
+                      }
+
                       final sale = ShopFlashSale(
                         id: widget.sale?.id ?? DateTime.now().toString(),
-                        productId: _productIdCtrl.text,
-                        discountPercent: int.tryParse(_discountCtrl.text) ?? 0,
-                        startTime: _startTimeCtrl.text,
-                        endTime: _endTimeCtrl.text,
+                        productId: productId,
+                        discountPercent: discount,
+                        startTime: _formatDateTimeValue(start),
+                        endTime: _formatDateTimeValue(end),
                         status: _status,
                       );
 
@@ -586,6 +661,150 @@ class _FlashSaleFormDialogState extends State<_FlashSaleFormDialog> {
       ),
     );
   }
+
+  Future<void> _loadProducts() async {
+    final products = await widget.repository.getProducts();
+    if (mounted) {
+      setState(() => _products = products);
+    }
+  }
+
+  Widget _buildProductPicker() {
+    final selected = _products.any((p) => p.id == _productIdCtrl.text.trim())
+        ? _productIdCtrl.text.trim()
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Sản phẩm',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF171717),
+            ),
+          ),
+        ),
+        DropdownButtonFormField<String>(
+          initialValue: selected,
+          isExpanded: true,
+          hint: const Text('Chọn sản phẩm'),
+          items: _products
+              .map(
+                (p) => DropdownMenuItem<String>(
+                  value: p.id,
+                  child: Text(
+                    '${p.name} (${p.id})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _productIdCtrl.text = value);
+          },
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Autocomplete<ShopProduct>(
+          optionsBuilder: (TextEditingValue value) {
+            final q = value.text.trim().toLowerCase();
+            if (q.isEmpty) return _products.take(8);
+            return _products.where((p) {
+              final byId = p.id.toLowerCase().contains(q);
+              final byName = p.name.toLowerCase().contains(q);
+              return byId || byName;
+            }).take(8);
+          },
+          displayStringForOption: (option) => '${option.name} (${option.id})',
+          onSelected: (option) {
+            setState(() => _productIdCtrl.text = option.id);
+          },
+          fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+            if (_productIdCtrl.text.isNotEmpty && controller.text.isEmpty) {
+              controller.text = _productIdCtrl.text;
+            }
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              onChanged: (value) => _productIdCtrl.text = value.trim(),
+              decoration: InputDecoration(
+                hintText: 'Nhập để gợi ý theo tên/ID',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Future<void> _pickDateTime(TextEditingController controller) async {
+    final initial = _parseDateTime(controller.text.trim()) ?? DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (date == null) return;
+    if (!mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return;
+    final merged = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    setState(() => controller.text = _formatDateTimeValue(merged));
+  }
+
+  DateTime? _parseDateTime(String value) {
+    if (value.isEmpty) return null;
+    final normalized = value.replaceFirst(' ', 'T');
+    return DateTime.tryParse(normalized);
+  }
+
+  String _formatDateTimeValue(DateTime dt) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    );
+  }
 }
 
 class _FormField extends StatelessWidget {
@@ -620,6 +839,64 @@ class _FormField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: 1,
           decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+}
+
+class _DateTimeField extends StatelessWidget {
+  const _DateTimeField({
+    required this.label,
+    required this.controller,
+    required this.onPick,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF171717),
+            ),
+          ),
+        ),
+        TextField(
+          controller: controller,
+          readOnly: true,
+          onTap: onPick,
+          decoration: InputDecoration(
+            hintText: 'Chọn ngày giờ',
+            suffixIcon: IconButton(
+              onPressed: onPick,
+              icon: const Icon(Icons.calendar_month_outlined),
+            ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),

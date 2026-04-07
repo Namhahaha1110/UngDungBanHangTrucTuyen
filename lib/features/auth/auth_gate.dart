@@ -180,6 +180,10 @@ class _AuthFlowState extends State<AuthFlow> {
         return 'Email hoặc mật khẩu không đúng, hoặc tài khoản này chưa được tạo trong project hiện tại.';
       case 'email-already-in-use':
         return 'Email này đã được sử dụng.';
+      case 'account-exists-with-different-credential':
+        return 'Email này đã đăng ký bằng phương thức khác.';
+      case 'credential-already-in-use':
+        return 'Thông tin đăng nhập này đã được sử dụng.';
       case 'weak-password':
         return 'Mật khẩu phải có ít nhất 6 ký tự.';
       case 'too-many-requests':

@@ -6,7 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/shop_models.dart';
 import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/smart_shop_image.dart';
+import 'cart_page.dart';
 import 'formatting.dart';
+import 'search_page.dart';
 
 class ProductDetailPage extends StatelessWidget {
   const ProductDetailPage({
@@ -42,9 +45,12 @@ class ProductDetailPage extends StatelessWidget {
                 final relatedProducts = [...products]
                   ..removeWhere((item) => item.id == product.id)
                   ..sort((left, right) {
-                    final leftScore = left.categoryId == product.categoryId ? 0 : 1;
-                    final rightScore =
-                        right.categoryId == product.categoryId ? 0 : 1;
+                    final leftScore = left.categoryId == product.categoryId
+                        ? 0
+                        : 1;
+                    final rightScore = right.categoryId == product.categoryId
+                        ? 0
+                        : 1;
                     if (leftScore != rightScore) {
                       return leftScore.compareTo(rightScore);
                     }
@@ -56,6 +62,26 @@ class ProductDetailPage extends StatelessWidget {
                   children: [
                     _DetailHeader(
                       onBack: () => Navigator.of(context).pop(),
+                      onCartTap: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute<void>(
+                            builder: (_) => CartPage(
+                              repository: repository,
+                              userId: userId,
+                            ),
+                          ),
+                        );
+                      },
+                      onSearchTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SearchPage(
+                              repository: repository,
+                              userId: userId,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     _HeroProductSection(product: product),
                     Padding(
@@ -218,9 +244,7 @@ class ProductDetailPage extends StatelessWidget {
     await repository.addToCart(userId, product);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã thêm sản phẩm vào giỏ hàng.'),
-      ),
+      const SnackBar(content: Text('Đã thêm sản phẩm vào giỏ hàng.')),
     );
   }
 
@@ -229,7 +253,9 @@ class ProductDetailPage extends StatelessWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Đã thêm sản phẩm. Bạn có thể thanh toán trong giỏ hàng.'),
+        content: Text(
+          'Đã thêm sản phẩm. Bạn có thể thanh toán trong giỏ hàng.',
+        ),
       ),
     );
   }
@@ -255,9 +281,13 @@ class _SearchPlaceholder extends StatelessWidget {
 class _DetailHeader extends StatelessWidget {
   const _DetailHeader({
     required this.onBack,
+    required this.onCartTap,
+    required this.onSearchTap,
   });
 
   final VoidCallback onBack;
+  final VoidCallback onCartTap;
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -265,10 +295,7 @@ class _DetailHeader extends StatelessWidget {
       height: 119,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFFFF7C08),
-            Color(0xFFFF6B00),
-          ],
+          colors: [Color(0xFFFF7C08), Color(0xFFFF6B00)],
         ),
       ),
       child: Padding(
@@ -287,35 +314,43 @@ class _DetailHeader extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Container(
-                height: 39,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.primary),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                    SizedBox(width: 8),
-                    _SearchPlaceholder(),
-                  ],
+              child: InkWell(
+                onTap: onSearchTap,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  height: 39,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: AppColors.primary),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: AppColors.textPrimary,
+                      ),
+                      SizedBox(width: 8),
+                      _SearchPlaceholder(),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 14),
-            const SizedBox(
+            SizedBox(
               width: 35,
               height: 35,
-              child: Icon(
-                Icons.shopping_cart_outlined,
-                size: 26,
-                color: AppColors.textPrimary,
+              child: IconButton(
+                onPressed: onCartTap,
+                padding: EdgeInsets.zero,
+                icon: const Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 26,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ],
@@ -326,9 +361,7 @@ class _DetailHeader extends StatelessWidget {
 }
 
 class _HeroProductSection extends StatelessWidget {
-  const _HeroProductSection({
-    required this.product,
-  });
+  const _HeroProductSection({required this.product});
 
   final ShopProduct product;
 
@@ -355,8 +388,8 @@ class _HeroProductSection extends StatelessWidget {
               child: SizedBox(
                 width: 313,
                 height: 313,
-                child: Image.asset(
-                  'assets/images/${product.image}',
+                child: SmartShopImage(
+                  source: product.image,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -374,16 +407,8 @@ class _HeroProductSection extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 347,
-                      height: 1,
-                      color: AppColors.border,
-                    ),
-                    Container(
-                      width: 98,
-                      height: 1,
-                      color: Colors.black,
-                    ),
+                    Container(width: 347, height: 1, color: AppColors.border),
+                    Container(width: 98, height: 1, color: Colors.black),
                   ],
                 ),
               ),
@@ -401,9 +426,7 @@ class _HeroProductSection extends StatelessWidget {
 }
 
 class _DiscountBadge extends StatelessWidget {
-  const _DiscountBadge({
-    required this.label,
-  });
+  const _DiscountBadge({required this.label});
 
   final String label;
 
@@ -414,10 +437,7 @@ class _DiscountBadge extends StatelessWidget {
       height: 18,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFFF81140),
-            Color(0xFFFF5790),
-          ],
+          colors: [Color(0xFFF81140), Color(0xFFFF5790)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -485,9 +505,7 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _SectionBar extends StatelessWidget {
-  const _SectionBar({
-    required this.title,
-  });
+  const _SectionBar({required this.title});
 
   final String title;
 
@@ -574,10 +592,7 @@ class _SizeRow extends StatelessWidget {
       padding: EdgeInsets.only(left: 13),
       child: Row(
         children: [
-          SizedBox(
-            width: 107,
-            child: _SizeLabel(),
-          ),
+          SizedBox(width: 107, child: _SizeLabel()),
           _SizeValue(),
         ],
       ),
@@ -620,10 +635,7 @@ class _SizeValue extends StatelessWidget {
 }
 
 class _RelatedProductCard extends StatelessWidget {
-  const _RelatedProductCard({
-    required this.product,
-    required this.onTap,
-  });
+  const _RelatedProductCard({required this.product, required this.onTap});
 
   final ShopProduct product;
   final VoidCallback onTap;
@@ -633,7 +645,7 @@ class _RelatedProductCard extends StatelessWidget {
     final discountPercent = _discountPercent(product.oldPrice, product.price);
     return SizedBox(
       width: 162,
-      height: 239,
+      height: 244,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -644,7 +656,7 @@ class _RelatedProductCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(5),
               child: Container(
                 width: 162,
-                height: 239,
+                height: 244,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Colors.black),
@@ -655,15 +667,15 @@ class _RelatedProductCard extends StatelessWidget {
                   children: [
                     SizedBox(
                       width: 161,
-                      height: 168,
-                      child: Image.asset(
-                        'assets/images/${product.image}',
+                      height: 164,
+                      child: SmartShopImage(
+                        source: product.image,
                         fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     SizedBox(
-                      height: 30,
+                      height: 28,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: Text(
@@ -679,17 +691,34 @@ class _RelatedProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Align(
                       alignment: Alignment.center,
-                      child: Text(
-                        formatCurrency(product.price),
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                          color: AppColors.primary,
-                        ),
+                      child: Column(
+                        children: [
+                          Text(
+                            formatCurrency(product.price),
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          if (discountPercent > 0) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${formatCurrency(product.oldPrice)}  (-$discountPercent%)',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                height: 1,
+                                color: const Color(0xFF9b9b9b),
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],

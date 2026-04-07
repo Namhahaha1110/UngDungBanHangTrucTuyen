@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -166,14 +167,10 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
         filtered = filtered.where((p) => p.oldPrice > p.price).toList();
         break;
       case 'Đang bán':
-        filtered = filtered
-            .where((p) => !p.soldText.toLowerCase().contains('hết'))
-            .toList();
+        filtered = filtered.where((p) => p.stock > 0).toList();
         break;
       case 'Hết hàng':
-        filtered = filtered
-            .where((p) => p.soldText.toLowerCase().contains('hết'))
-            .toList();
+        filtered = filtered.where((p) => p.stock <= 0).toList();
         break;
     }
 
@@ -238,27 +235,28 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _idCtrl;
   late final TextEditingController _nameCtrl;
   late final TextEditingController _priceCtrl;
-  late final TextEditingController _oldPriceCtrl;
-  late final TextEditingController _categoryCtrl;
-  late final TextEditingController _imageCtrl;
-  late final TextEditingController _soldTextCtrl;
+  late final TextEditingController _stockCtrl;
+  late final TextEditingController _imageUrlCtrl;
   late final TextEditingController _descCtrl;
+  List<ShopCategory> _categories = const [];
+  String? _selectedCategoryId;
   Uint8List? _pickedImageBytes;
   String? _pickedImageName;
+  bool _loadingMeta = true;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     final p = widget.initialProduct;
-    _idCtrl = TextEditingController(text: p?.id ?? _createId());
+    _idCtrl = TextEditingController(text: p?.id ?? '');
     _nameCtrl = TextEditingController(text: p?.name ?? '');
     _priceCtrl = TextEditingController(text: p?.price.toString() ?? '');
-    _oldPriceCtrl = TextEditingController(text: p?.oldPrice.toString() ?? '');
-    _categoryCtrl = TextEditingController(text: p?.categoryId ?? '');
-    _imageCtrl = TextEditingController(text: p?.image ?? '');
-    _soldTextCtrl = TextEditingController(text: p?.soldText ?? '');
+    _stockCtrl = TextEditingController(text: p?.stock.toString() ?? '0');
+    _imageUrlCtrl = TextEditingController(text: p?.image ?? '');
     _descCtrl = TextEditingController(text: p?.description ?? '');
+    _selectedCategoryId = p?.categoryId;
+    _loadMeta();
   }
 
   @override
@@ -266,10 +264,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _idCtrl.dispose();
     _nameCtrl.dispose();
     _priceCtrl.dispose();
-    _oldPriceCtrl.dispose();
-    _categoryCtrl.dispose();
-    _imageCtrl.dispose();
-    _soldTextCtrl.dispose();
+    _stockCtrl.dispose();
+    _imageUrlCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -281,70 +277,85 @@ class _ProductFormPageState extends State<ProductFormPage> {
       appBar: AppBar(
         title: Text(widget.isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          _FormCard(
-            title: 'Thông tin cơ bản',
-            children: [
-              _LabeledField(
-                label: 'ID',
-                controller: _idCtrl,
-                enabled: !widget.isEdit,
-              ),
-              _LabeledField(label: 'Tên sản phẩm', controller: _nameCtrl),
-              _LabeledField(
-                label: 'Giá bán',
-                controller: _priceCtrl,
-                keyboardType: TextInputType.number,
-              ),
-              _LabeledField(
-                label: 'Giá cũ',
-                controller: _oldPriceCtrl,
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _FormCard(
-            title: 'Phân loại và hiển thị',
-            children: [
-              _LabeledField(label: 'Category ID', controller: _categoryCtrl),
-              _LabeledField(label: 'Image key', controller: _imageCtrl),
-              _ImagePickerBlock(
-                source: _imageCtrl.text.trim(),
-                memoryBytes: _pickedImageBytes,
-                onPick: _pickImage,
-              ),
-              _LabeledField(label: 'Sold text', controller: _soldTextCtrl),
-              _LabeledField(label: 'Mô tả', controller: _descCtrl, maxLines: 4),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saving
-                      ? null
-                      : () => Navigator.of(context).pop(false),
-                  child: const Text('Hủy'),
+      body: _loadingMeta
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                _FormCard(
+                  title: 'Thông tin cơ bản',
+                  children: [
+                    _LabeledField(
+                      label: 'ID',
+                      controller: _idCtrl,
+                      enabled: false,
+                    ),
+                    _LabeledField(label: 'Tên sản phẩm', controller: _nameCtrl),
+                    _LabeledField(
+                      label: 'Giá bán',
+                      controller: _priceCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFea580c),
-                  ),
-                  child: Text(_saving ? 'Đang lưu...' : 'Lưu'),
+                const SizedBox(height: 10),
+                _FormCard(
+                  title: 'Phân loại và hiển thị',
+                  children: [
+                    _CategoryDropdownField(
+                      value: _selectedCategoryId,
+                      items: _categories,
+                      onChanged: (value) {
+                        setState(() => _selectedCategoryId = value);
+                      },
+                    ),
+                    _LabeledField(
+                      label: 'URL ảnh',
+                      controller: _imageUrlCtrl,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    _ImagePickerBlock(
+                      source: _imageUrlCtrl.text.trim(),
+                      memoryBytes: _pickedImageBytes,
+                      onPick: _pickImage,
+                    ),
+                    _LabeledField(
+                      label: 'Tồn kho',
+                      controller: _stockCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                    _LabeledField(
+                      label: 'Mô tả',
+                      controller: _descCtrl,
+                      maxLines: 4,
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                        child: const Text('Hủy'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _saving ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFea580c),
+                        ),
+                        child: Text(_saving ? 'Đang lưu...' : 'Lưu'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 
@@ -359,44 +370,66 @@ class _ProductFormPageState extends State<ProductFormPage> {
       _snack('ID không được để trống');
       return;
     }
-
-    var imageRef = _imageCtrl.text.trim();
-    if (_pickedImageBytes != null) {
-      imageRef = await widget.repository.uploadAdminImage(
-        bytes: _pickedImageBytes!,
-        folder: 'products',
-        fileName: _pickedImageName ?? '$id.jpg',
-      );
+    if ((_selectedCategoryId ?? '').isEmpty) {
+      _snack('Vui lòng chọn danh mục');
+      return;
     }
-    if (imageRef.isEmpty) {
-      imageRef = 'product_shirt.png';
+    final stock = int.tryParse(_stockCtrl.text.trim()) ?? 0;
+    if (stock < 0) {
+      _snack('Tồn kho không hợp lệ');
+      return;
     }
-
-    final product = ShopProduct(
-      id: id,
-      name: name,
-      price: int.tryParse(_priceCtrl.text.trim()) ?? 0,
-      oldPrice: int.tryParse(_oldPriceCtrl.text.trim()) ?? 0,
-      image: imageRef,
-      categoryId: _categoryCtrl.text.trim().isEmpty
-          ? 'men'
-          : _categoryCtrl.text.trim(),
-      description: _descCtrl.text.trim(),
-      soldText: _soldTextCtrl.text.trim(),
-      imageKey: imageRef,
-    );
 
     setState(() => _saving = true);
     try {
+      var imageRef = _imageUrlCtrl.text.trim();
+      if (_pickedImageBytes != null) {
+        try {
+          imageRef = await widget.repository
+              .uploadAdminImage(
+                bytes: _pickedImageBytes!,
+                folder: 'products',
+                fileName: _pickedImageName ?? '$id.jpg',
+              )
+              .timeout(const Duration(seconds: 20));
+        } catch (_) {
+          imageRef = _imageUrlCtrl.text.trim();
+          _snack('Upload ảnh lỗi, hệ thống sẽ lưu với ảnh mặc định.');
+        }
+      }
+      if (imageRef.isEmpty) {
+        imageRef = widget.initialProduct?.image ?? 'product_shirt.png';
+      }
+
+      final product = ShopProduct(
+        id: id,
+        name: name,
+        price: int.tryParse(_priceCtrl.text.trim()) ?? 0,
+        oldPrice: int.tryParse(_priceCtrl.text.trim()) ?? 0,
+        stock: stock,
+        image: imageRef,
+        categoryId: _selectedCategoryId!,
+        description: _descCtrl.text.trim(),
+        soldText: stock <= 0 ? 'Hết hàng' : 'Còn $stock sản phẩm',
+        imageKey: imageRef,
+      );
+
       if (widget.isEdit) {
-        await widget.repository.updateProduct(product);
+        await widget.repository
+            .updateProduct(product)
+            .timeout(const Duration(seconds: 20));
       } else {
-        await widget.repository.addProduct(product);
+        await widget.repository
+            .addProduct(product)
+            .timeout(const Duration(seconds: 20));
       }
       if (!mounted) return;
       Navigator.of(context).pop(true);
+    } on TimeoutException {
+      _snack('Lưu thất bại: Kết nối tới Firebase quá chậm, thử lại.');
+      setState(() => _saving = false);
     } catch (e) {
-      _snack('Lưu thất bại: $e');
+      _snack('Lưu thất bại: ${_friendlyError(e)}');
       setState(() => _saving = false);
     }
   }
@@ -407,7 +440,57 @@ class _ProductFormPageState extends State<ProductFormPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _createId() => 'p_${DateTime.now().millisecondsSinceEpoch}';
+  String _friendlyError(Object error) {
+    final text = '$error';
+    if (text.contains('permission-denied')) {
+      return 'Không có quyền upload ảnh hoặc ghi dữ liệu. Kiểm tra role admin và storage rules.';
+    }
+    if (text.contains('object-not-found')) {
+      return 'Không tìm thấy tệp ảnh đã chọn.';
+    }
+    return text;
+  }
+
+  Future<void> _loadMeta() async {
+    try {
+      final categories = await widget.repository.getCategories();
+      String nextId = _idCtrl.text.trim();
+      if (!widget.isEdit) {
+        final products = await widget.repository.getProducts();
+        nextId = _buildNextProductId(products);
+      }
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _selectedCategoryId =
+            _selectedCategoryId ??
+            (categories.isNotEmpty ? categories.first.id : null);
+        if (!widget.isEdit) {
+          _idCtrl.text = nextId;
+        }
+        _loadingMeta = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMeta = false);
+    }
+  }
+
+  String _buildNextProductId(List<ShopProduct> products) {
+    var maxNumber = 0;
+    final regex = RegExp(r'(\d+)$');
+    for (final product in products) {
+      final match = regex.firstMatch(product.id);
+      final value = int.tryParse(match?.group(1) ?? '');
+      if (value != null && value > maxNumber) {
+        maxNumber = value;
+      }
+    }
+    if (maxNumber == 0) {
+      return 'p_${DateTime.now().millisecondsSinceEpoch}';
+    }
+    return 'p_${maxNumber + 1}';
+  }
 
   Future<void> _pickImage() async {
     final result = await FilePicker.platform.pickFiles(
@@ -422,6 +505,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     setState(() {
       _pickedImageBytes = picked.bytes;
       _pickedImageName = picked.name;
+      _imageUrlCtrl.clear();
     });
   }
 }
@@ -582,6 +666,14 @@ class _ProductListRow extends StatelessWidget {
                     color: Color(0xFFea580c),
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tồn kho: ${product.stock}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF7a7a7a),
+                  ),
+                ),
               ],
             ),
           ),
@@ -661,6 +753,62 @@ class _ImagePickerBlock extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryDropdownField extends StatelessWidget {
+  const _CategoryDropdownField({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final List<ShopCategory> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Danh mục',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF7a7a7a),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE0E0E0)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isExpanded: true,
+                hint: const Text('Chọn danh mục'),
+                items: items
+                    .map(
+                      (category) => DropdownMenuItem<String>(
+                        value: category.id,
+                        child: Text('${category.name} (${category.id})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: onChanged,
+              ),
+            ),
           ),
         ],
       ),
@@ -787,6 +935,7 @@ class _LabeledField extends StatelessWidget {
     this.enabled = true,
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
+    this.onChanged,
   });
 
   final String label;
@@ -794,6 +943,7 @@ class _LabeledField extends StatelessWidget {
   final bool enabled;
   final TextInputType keyboardType;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -816,6 +966,7 @@ class _LabeledField extends StatelessWidget {
             enabled: enabled,
             keyboardType: keyboardType,
             maxLines: maxLines,
+            onChanged: onChanged,
             decoration: InputDecoration(
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(

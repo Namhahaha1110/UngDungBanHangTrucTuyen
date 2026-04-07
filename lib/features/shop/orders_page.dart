@@ -4,28 +4,29 @@ import 'package:intl/intl.dart';
 import '../../models/shop_models.dart';
 import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/smart_shop_image.dart';
 import 'formatting.dart';
 import 'order_detail_page.dart';
 
-class OrdersPage extends StatelessWidget {
-  const OrdersPage({
-    required this.repository,
-    required this.userId,
-    super.key,
-  });
+class OrdersPage extends StatefulWidget {
+  const OrdersPage({required this.repository, required this.userId, super.key});
 
   final ShopRepository repository;
   final String userId;
 
   @override
+  State<OrdersPage> createState() => _OrdersPageState();
+}
+
+class _OrdersPageState extends State<OrdersPage> {
+  final Set<String> _updatingOrderIds = <String>{};
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Đơn hàng của tôi'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Đơn hàng của tôi'), centerTitle: true),
       body: StreamBuilder<List<ShopOrder>>(
-        stream: repository.orders(userId),
+        stream: widget.repository.orders(widget.userId),
         builder: (context, snapshot) {
           final orders = snapshot.data ?? const <ShopOrder>[];
 
@@ -51,8 +52,8 @@ class OrdersPage extends StatelessWidget {
                       'Đặt hàng ngay để tận hưởng các sản phẩm tuyệt vời',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -67,12 +68,16 @@ class OrdersPage extends StatelessWidget {
               final order = orders[index];
               return _OrderCard(
                 order: order,
+                isUpdating: _updatingOrderIds.contains(order.id),
+                onComplete: _canComplete(order.status)
+                    ? () => _markCompleted(order)
+                    : null,
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => OrderDetailPage(
-                        repository: repository,
-                        userId: userId,
+                        repository: widget.repository,
+                        userId: widget.userId,
                         order: order,
                       ),
                     ),
@@ -85,16 +90,55 @@ class OrdersPage extends StatelessWidget {
       ),
     );
   }
+
+  bool _canComplete(String status) {
+    final normalized = status.trim().toLowerCase();
+    return normalized == 'paid' ||
+        normalized == 'confirmed' ||
+        normalized == 'shipping' ||
+        normalized == 'delivered' ||
+        normalized == 'review';
+  }
+
+  Future<void> _markCompleted(ShopOrder order) async {
+    setState(() => _updatingOrderIds.add(order.id));
+    try {
+      await widget.repository.completeOwnOrder(
+        userId: widget.userId,
+        orderId: order.id,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã hoàn thành đơn mua.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể hoàn thành đơn: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _updatingOrderIds.remove(order.id));
+      }
+    }
+  }
 }
 
 class _OrderCard extends StatelessWidget {
   const _OrderCard({
     required this.order,
     required this.onTap,
+    this.onComplete,
+    this.isUpdating = false,
   });
 
   final ShopOrder order;
   final VoidCallback onTap;
+  final VoidCallback? onComplete;
+  final bool isUpdating;
 
   @override
   Widget build(BuildContext context) {
@@ -125,16 +169,15 @@ class _OrderCard extends StatelessWidget {
                     children: [
                       Text(
                         'Đơn hàng #${order.id.substring(0, 8).toUpperCase()}',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         order.createdAt != null
-                            ? DateFormat('dd/MM/yyyy HH:mm')
-                                .format(order.createdAt!)
+                            ? DateFormat(
+                                'dd/MM/yyyy HH:mm',
+                              ).format(order.createdAt!)
                             : 'N/A',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -142,8 +185,10 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(order.status),
                     borderRadius: BorderRadius.circular(8),
@@ -151,9 +196,9 @@ class _OrderCard extends StatelessWidget {
                   child: Text(
                     order.statusDisplay,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -163,8 +208,8 @@ class _OrderCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/${order.items.first.image}',
+                  child: SmartShopImage(
+                    source: order.items.first.image,
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
@@ -179,10 +224,9 @@ class _OrderCard extends StatelessWidget {
                         order.items.first.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       if (order.items.length > 1)
                         Text(
@@ -208,11 +252,11 @@ class _OrderCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         formatCurrency(order.total),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -224,6 +268,26 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (onComplete != null) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton(
+                  onPressed: isUpdating ? null : onComplete,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: AppColors.primary,
+                  ),
+                  child: isUpdating
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Hoàn thành'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -234,6 +298,12 @@ class _OrderCard extends StatelessWidget {
     switch (status) {
       case 'pending':
         return const Color(0xFFFFA500);
+      case 'paid':
+        return const Color(0xFF4CAF50);
+      case 'review':
+        return const Color(0xFF2196F3);
+      case 'completed':
+        return const Color(0xFF4CAF50);
       case 'confirmed':
         return const Color(0xFF4CAF50);
       case 'shipping':

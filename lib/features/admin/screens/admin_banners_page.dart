@@ -369,7 +369,11 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                   _FormField(label: 'ID Banner', controller: _idCtrl),
                   _FormField(label: 'Vị trí', controller: _positionCtrl),
                   _FormField(label: 'Link', controller: _linkCtrl),
-                  _FormField(label: 'Image key / URL', controller: _imageCtrl),
+                  _FormField(
+                    label: 'Image key / URL',
+                    controller: _imageCtrl,
+                    onChanged: (_) => setState(() {}),
+                  ),
                   _ImagePickerBlock(
                     source: _imageCtrl.text.trim(),
                     memoryBytes: _pickedImageBytes,
@@ -545,6 +549,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
     setState(() {
       _pickedImageBytes = picked.bytes;
       _pickedImageName = picked.name;
+      _imageCtrl.clear();
     });
   }
 
@@ -592,10 +597,15 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
 }
 
 class _FormField extends StatelessWidget {
-  const _FormField({required this.label, required this.controller});
+  const _FormField({
+    required this.label,
+    required this.controller,
+    this.onChanged,
+  });
 
   final String label;
   final TextEditingController controller;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -617,6 +627,7 @@ class _FormField extends StatelessWidget {
           controller: controller,
           maxLines: 1,
           minLines: 1,
+          onChanged: onChanged,
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 10,

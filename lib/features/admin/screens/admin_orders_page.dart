@@ -22,9 +22,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
 
   String _normalizedStatus(String status) {
     final value = status.toLowerCase().trim();
-    if (value == 'pending') return 'pending';
-    if (value == 'paid') return 'paid';
-    if (value == 'review') return 'review';
+    if (value == 'pending' || value == 'processing') return 'pending';
+    if (value == 'paid' ||
+        value == 'completed' ||
+        value == 'delivered' ||
+        value == 'confirmed') {
+      return 'paid';
+    }
+    if (value == 'review' || value == 'shipping') return 'review';
     return value;
   }
 
@@ -192,6 +197,31 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
               Text('Trạng thái: ${order.status}'),
               const SizedBox(height: 8),
               Text('Ngày tạo: ${order.createdAt}'),
+              const SizedBox(height: 12),
+              const Text(
+                'Địa chỉ giao hàng',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFECECEC)),
+                ),
+                child: SelectableText(
+                  order.address.trim().isEmpty
+                      ? 'Chưa có địa chỉ giao hàng'
+                      : order.address,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: Color(0xFF171717),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -210,7 +240,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setModalState) => AlertDialog(
           title: const Text('Cập nhật trạng thái'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -221,7 +251,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 items: ['pending', 'paid', 'review', 'completed']
                     .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(),
-                onChanged: (val) => setState(() => status = val ?? status),
+                onChanged: (val) => setModalState(() => status = val ?? status),
               ),
             ],
           ),
@@ -234,10 +264,11 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
               onPressed: () async {
                 final updatedOrder = order.copyWith(status: status);
                 await widget.repository.updateOrder(updatedOrder);
+                if (!mounted) return;
                 if (context.mounted) {
                   Navigator.pop(context);
-                  setState(() {});
                 }
+                setState(() {});
               },
               child: const Text(
                 'Cập nhật',
@@ -351,12 +382,16 @@ class _OrderListRow extends StatelessWidget {
   final VoidCallback onUpdate;
 
   Color _getStatusColor(String status) {
-    switch (status) {
+    switch (status.toLowerCase().trim()) {
       case 'pending':
         return const Color(0xFFfff2e8);
       case 'paid':
+      case 'completed':
+      case 'delivered':
+      case 'confirmed':
         return const Color(0xFFeafaf0);
       case 'review':
+      case 'shipping':
         return const Color(0xFFeff5ff);
       default:
         return const Color(0xFFF7F7F7);
@@ -364,12 +399,16 @@ class _OrderListRow extends StatelessWidget {
   }
 
   Color _getStatusTextColor(String status) {
-    switch (status) {
+    switch (status.toLowerCase().trim()) {
       case 'pending':
         return const Color(0xFFea580c);
       case 'paid':
+      case 'completed':
+      case 'delivered':
+      case 'confirmed':
         return const Color(0xFF12824a);
       case 'review':
+      case 'shipping':
         return const Color(0xFF2563eb);
       default:
         return const Color(0xFF7a7a7a);

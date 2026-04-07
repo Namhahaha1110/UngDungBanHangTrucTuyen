@@ -392,7 +392,11 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
                     controller: _descCtrl,
                     maxLines: 2,
                   ),
-                  _FormField(label: 'Image key / URL', controller: _imageCtrl),
+                  _FormField(
+                    label: 'Image key / URL',
+                    controller: _imageCtrl,
+                    onChanged: (_) => setState(() {}),
+                  ),
                   _ImagePickerBlock(
                     source: _imageCtrl.text.trim(),
                     memoryBytes: _pickedImageBytes,
@@ -475,6 +479,7 @@ class _CategoryFormDialogState extends State<_CategoryFormDialog> {
     setState(() {
       _pickedImageBytes = picked.bytes;
       _pickedImageName = picked.name;
+      _imageCtrl.clear();
     });
   }
 
@@ -526,11 +531,13 @@ class _FormField extends StatelessWidget {
     required this.label,
     required this.controller,
     this.maxLines = 1,
+    this.onChanged,
   });
 
   final String label;
   final TextEditingController controller;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -552,6 +559,7 @@ class _FormField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           minLines: maxLines > 1 ? maxLines : null,
+          onChanged: onChanged,
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 10,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/shop_models.dart';
 import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/smart_shop_image.dart';
 import 'formatting.dart';
 
 class OrderDetailPage extends StatelessWidget {
@@ -42,17 +43,17 @@ class OrderDetailPage extends StatelessWidget {
                 children: [
                   Text(
                     'Trạng thái',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     order.statusDisplay,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -71,9 +72,9 @@ class OrderDetailPage extends StatelessWidget {
                 ),
                 Text(
                   order.id,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -81,17 +82,14 @@ class OrderDetailPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Ngày đặt',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text('Ngày đặt', style: Theme.of(context).textTheme.bodyMedium),
                 Text(
                   order.createdAt != null
                       ? DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt!)
                       : 'N/A',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -143,9 +141,7 @@ class OrderDetailPage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(
-                  color: const Color(0xFFE0E0E0),
-                ),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -158,11 +154,15 @@ class OrderDetailPage extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       Text(
-                        formatCurrency(order.items.fold(0, (sum, item) => sum + item.price * item.quantity)),
-                        style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        formatCurrency(
+                          order.items.fold(
+                            0,
+                            (sum, item) => sum + item.price * item.quantity,
+                          ),
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -176,10 +176,9 @@ class OrderDetailPage extends StatelessWidget {
                       ),
                       Text(
                         '0₫',
-                        style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -189,18 +188,16 @@ class OrderDetailPage extends StatelessWidget {
                     children: [
                       Text(
                         'Tổng tiền',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         formatCurrency(order.total),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -218,6 +215,12 @@ class OrderDetailPage extends StatelessWidget {
     switch (status) {
       case 'pending':
         return const Color(0xFFFFA500);
+      case 'paid':
+        return const Color(0xFF4CAF50);
+      case 'review':
+        return const Color(0xFF2196F3);
+      case 'completed':
+        return const Color(0xFF4CAF50);
       case 'confirmed':
       case 'delivered':
         return const Color(0xFF4CAF50);
@@ -231,7 +234,9 @@ class OrderDetailPage extends StatelessWidget {
   }
 
   String _formatPaymentMethod(String method) {
-    switch (method) {
+    switch (method.trim().toLowerCase()) {
+      case 'shoppepay':
+        return 'ShoppePay';
       case 'card':
         return 'Thẻ tín dụng/Ghi nợ';
       case 'bank':
@@ -265,8 +270,8 @@ class _OrderItemCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: Image.asset(
-              'assets/images/${item.image}',
+            child: SmartShopImage(
+              source: item.image,
               width: 80,
               height: 80,
               fit: BoxFit.cover,
@@ -281,9 +286,9 @@ class _OrderItemCard extends StatelessWidget {
                   item.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -294,9 +299,9 @@ class _OrderItemCard extends StatelessWidget {
                 Text(
                   formatCurrency(item.totalPrice),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -316,9 +321,9 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 }

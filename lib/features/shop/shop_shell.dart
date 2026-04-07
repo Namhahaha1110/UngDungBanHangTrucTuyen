@@ -6,18 +6,17 @@ import '../../models/shop_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/shop_repository.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/smart_shop_image.dart';
 import '../admin/admin_view_mode.dart';
 import 'checkout_page.dart';
 import 'formatting.dart';
 import 'orders_page.dart';
 import 'product_detail_page.dart';
+import 'search_page.dart';
+import 'shipping_addresses_page.dart';
 
 class ShopShell extends StatefulWidget {
-  const ShopShell({
-    required this.authService,
-    required this.user,
-    super.key,
-  });
+  const ShopShell({required this.authService, required this.user, super.key});
 
   final AuthService authService;
   final User user;
@@ -27,10 +26,12 @@ class ShopShell extends StatefulWidget {
 }
 
 class _ShopShellState extends State<ShopShell> {
-  late final ShopRepository _repository =
-      ShopRepository(FirebaseFirestore.instance);
-  late final Future<void> _setupUserFuture =
-      _repository.ensureUserDocument(widget.user);
+  late final ShopRepository _repository = ShopRepository(
+    FirebaseFirestore.instance,
+  );
+  late final Future<void> _setupUserFuture = _repository.ensureUserDocument(
+    widget.user,
+  );
   int _currentIndex = 0;
 
   @override
@@ -67,10 +68,7 @@ class _ShopShellState extends State<ShopShell> {
         return Scaffold(
           body: SafeArea(
             bottom: false,
-            child: IndexedStack(
-              index: _currentIndex,
-              children: pages,
-            ),
+            child: IndexedStack(index: _currentIndex, children: pages),
           ),
           bottomNavigationBar: _BottomBar(
             currentIndex: _currentIndex,
@@ -110,30 +108,43 @@ class _HomeTab extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      height: 39,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Tìm kiếm',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SearchPage(
+                              repository: repository,
+                              userId: userId,
                             ),
                           ),
-                        ],
+                        );
+                      },
+                      child: Container(
+                        height: 39,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.search_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Tìm kiếm',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -204,7 +215,11 @@ class _HomeTab extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final banner = banners[index];
                     return Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 8, top: 18),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 8,
+                        top: 18,
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
                         child: Image.asset(
@@ -222,10 +237,7 @@ class _HomeTab extends StatelessWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 33, 16, 0),
-            child: _SectionTitle(
-              title: 'Danh mục',
-              actionLabel: 'Xem tất cả',
-            ),
+            child: _SectionTitle(title: 'Danh mục', actionLabel: 'Xem tất cả'),
           ),
         ),
         SliverToBoxAdapter(
@@ -239,8 +251,7 @@ class _HomeTab extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: categories.length,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 8,
@@ -248,7 +259,10 @@ class _HomeTab extends StatelessWidget {
                   ),
                   itemBuilder: (context, index) {
                     final category = categories[index];
-                    return _CategoryCard(category: category);
+                    return _CategoryCard(
+                      category: category,
+                      onTap: () => _openCategory(context, category),
+                    );
                   },
                 );
               },
@@ -273,94 +287,83 @@ class _HomeTab extends StatelessWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 17, 19, 0),
-            child: _SectionTitle(
-              title: 'Flash Sale',
-              actionLabel: '',
-            ),
+            child: _SectionTitle(title: 'Flash Sale', actionLabel: ''),
           ),
         ),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 276,
-            child: StreamBuilder<List<PromoBanner>>(
+            child: StreamBuilder<List<ShopFlashSale>>(
               stream: repository.flashSale(),
               builder: (context, snapshot) {
-                final flashItems = snapshot.data ?? const <PromoBanner>[];
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                  child: Column(
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          height: 27,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFE2D1),
-                            borderRadius: BorderRadius.circular(14),
+                final sales = snapshot.data ?? const <ShopFlashSale>[];
+                return StreamBuilder<List<ShopProduct>>(
+                  stream: repository.products(),
+                  builder: (context, productSnapshot) {
+                    final products = productSnapshot.data ?? const <ShopProduct>[];
+                    final flashProducts = products
+                        .where((p) => sales.any((s) => s.productId == p.id))
+                        .take(6)
+                        .toList();
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                      child: Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              height: 27,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFE2D1),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'LIVE',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '00',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Text(':'),
-                              SizedBox(width: 6),
-                              Text(
-                                '36',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Text(':'),
-                              SizedBox(width: 6),
-                              Text(
-                                '58',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 10),
+                          Expanded(
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: flashProducts.length,
+                              separatorBuilder: (_, index) =>
+                                  const SizedBox(width: 9),
+                              itemBuilder: (context, index) {
+                                final product = flashProducts[index];
+                                return SizedBox(
+                                  width: 120,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: () => _openProduct(context, product),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: SmartShopImage(
+                                        source: product.image,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: flashItems.length.clamp(0, 6),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 9,
-                            mainAxisSpacing: 9,
-                            childAspectRatio: 0.92,
-                          ),
-                          itemBuilder: (context, index) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.asset(
-                                'assets/images/${flashItems[index].image}',
-                                fit: BoxFit.cover,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -372,9 +375,9 @@ class _HomeTab extends StatelessWidget {
             child: Text(
               'Sản phẩm bán chạy',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                  ),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -384,14 +387,16 @@ class _HomeTab extends StatelessWidget {
             child: StreamBuilder<List<UserProductItem>>(
               stream: repository.favorites(userId),
               builder: (context, favoriteSnapshot) {
-                final favoriteIds = favoriteSnapshot.data
+                final favoriteIds =
+                    favoriteSnapshot.data
                         ?.map((item) => item.productId)
                         .toSet() ??
                     <String>{};
                 return StreamBuilder<List<ShopProduct>>(
                   stream: repository.products(),
                   builder: (context, productSnapshot) {
-                    final products = productSnapshot.data ?? const <ShopProduct>[];
+                    final products =
+                        productSnapshot.data ?? const <ShopProduct>[];
                     return Wrap(
                       spacing: 16,
                       runSpacing: 16,
@@ -432,6 +437,18 @@ class _HomeTab extends StatelessWidget {
       ),
     );
   }
+
+  void _openCategory(BuildContext context, ShopCategory category) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _CategoryProductsPage(
+          repository: repository,
+          userId: userId,
+          category: category,
+        ),
+      ),
+    );
+  }
 }
 
 class _CategoryTab extends StatelessWidget {
@@ -465,29 +482,42 @@ class _CategoryTab extends StatelessWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          height: 39,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: const Row(
-                            children: [
-                              Icon(
-                                Icons.search_rounded,
-                                size: 18,
-                                color: AppColors.textSecondary,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Tìm kiếm',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => SearchPage(
+                                  repository: repository,
+                                  userId: userId,
                                 ),
                               ),
-                            ],
+                            );
+                          },
+                          child: Container(
+                            height: 39,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.search_rounded,
+                                  size: 18,
+                                  color: AppColors.textSecondary,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Tìm kiếm',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -547,9 +577,9 @@ class _CategoryTab extends StatelessWidget {
                   child: Text(
                     'Mua sắm theo danh mục',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 22),
@@ -561,13 +591,27 @@ class _CategoryTab extends StatelessWidget {
                     itemCount: categories.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.045,
-                    ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 1.045,
+                        ),
                     itemBuilder: (context, index) {
-                      return _CategoryCard(category: categories[index]);
+                      final category = categories[index];
+                      return _CategoryCard(
+                        category: category,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => _CategoryProductsPage(
+                                repository: repository,
+                                userId: userId,
+                                category: category,
+                              ),
+                            ),
+                          );
+                        },
+                      );
                     },
                   ),
                 ),
@@ -608,9 +652,7 @@ class _CategoryTab extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   category.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
+                                  style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -623,8 +665,8 @@ class _CategoryTab extends StatelessWidget {
                                 contentPadding: EdgeInsets.zero,
                                 leading: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    'assets/images/${product.image}',
+                                  child: SmartShopImage(
+                                    source: product.image,
                                     width: 54,
                                     height: 54,
                                     fit: BoxFit.cover,
@@ -638,9 +680,7 @@ class _CategoryTab extends StatelessWidget {
                                 subtitle: Text(product.soldText),
                                 trailing: Text(
                                   formatCurrency(product.price),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(color: AppColors.primary),
                                 ),
                                 onTap: () {
@@ -672,10 +712,7 @@ class _CategoryTab extends StatelessWidget {
 }
 
 class _WishlistTab extends StatelessWidget {
-  const _WishlistTab({
-    required this.repository,
-    required this.userId,
-  });
+  const _WishlistTab({required this.repository, required this.userId});
 
   final ShopRepository repository;
   final String userId;
@@ -710,7 +747,8 @@ class _WishlistTab extends StatelessWidget {
                   ),
                 );
               },
-              onAddToCart: () => repository.addToCart(userId, _productFromItem(item)),
+              onAddToCart: () =>
+                  repository.addToCart(userId, _productFromItem(item)),
               onRemove: () =>
                   repository.toggleFavorite(userId, _productFromItem(item)),
             );
@@ -737,10 +775,7 @@ class CartPageWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Giỏ hàng'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Giỏ hàng'), centerTitle: true),
       body: _CartTab(repository: repository, userId: userId),
     );
   }
@@ -769,10 +804,7 @@ class WishlistPageWrapper extends StatelessWidget {
 }
 
 class _CartTab extends StatelessWidget {
-  const _CartTab({
-    required this.repository,
-    required this.userId,
-  });
+  const _CartTab({required this.repository, required this.userId});
 
   final ShopRepository repository;
   final String userId;
@@ -791,7 +823,10 @@ class _CartTab extends StatelessWidget {
           );
         }
 
-        final total = items.fold<int>(0, (value, item) => value + item.totalPrice);
+        final total = items.fold<int>(
+          0,
+          (value, item) => value + item.totalPrice,
+        );
 
         return Column(
           children: [
@@ -841,10 +876,8 @@ class _CartTab extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             formatCurrency(total),
-                            style:
-                                Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      color: AppColors.primary,
-                                    ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: AppColors.primary),
                           ),
                         ],
                       ),
@@ -903,7 +936,9 @@ class _ProfileTab extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tính năng đang phát triển')),
+                          const SnackBar(
+                            content: Text('Tính năng đang phát triển'),
+                          ),
                         );
                       },
                       child: Container(
@@ -939,7 +974,9 @@ class _ProfileTab extends StatelessWidget {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => CartPageWrapper(
-                            repository: ShopRepository(FirebaseFirestore.instance),
+                            repository: ShopRepository(
+                              FirebaseFirestore.instance,
+                            ),
                             userId: user.uid,
                           ),
                         ),
@@ -954,7 +991,9 @@ class _ProfileTab extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tính năng đang phát triển')),
+                          const SnackBar(
+                            content: Text('Tính năng đang phát triển'),
+                          ),
                         );
                       },
                       child: const Icon(
@@ -1031,11 +1070,14 @@ class _ProfileTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 GestureDetector(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tính năng đang phát triển')),
-                    );
-                  },
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => OrdersPage(
+                        repository: repository,
+                        userId: user.uid,
+                      ),
+                    ),
+                  ),
                   child: Container(
                     height: 74,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -1183,11 +1225,14 @@ class _ProfileTab extends StatelessWidget {
               _MenuTile(
                 icon: Icons.local_shipping_outlined,
                 label: 'Vận chuyển',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tính năng đang phát triển')),
-                  );
-                },
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ShippingAddressesPage(
+                      repository: ShopRepository(FirebaseFirestore.instance),
+                      userId: user.uid,
+                    ),
+                  ),
+                ),
               ),
               _MenuTile(
                 icon: Icons.confirmation_num_outlined,
@@ -1205,8 +1250,9 @@ class _ProfileTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
           child: ElevatedButton(
             onPressed: authService.signOut,
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.textPrimary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.textPrimary,
+            ),
             child: const Text('Đăng xuất'),
           ),
         ),
@@ -1216,10 +1262,7 @@ class _ProfileTab extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.actionLabel,
-  });
+  const _SectionTitle({required this.title, required this.actionLabel});
 
   final String title;
   final String actionLabel;
@@ -1232,19 +1275,19 @@ class _SectionTitle extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                ),
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         if (actionLabel.isNotEmpty)
           Text(
             actionLabel,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
           ),
       ],
     );
@@ -1252,11 +1295,7 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _MenuTile extends StatelessWidget {
-  const _MenuTile({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
+  const _MenuTile({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
@@ -1270,11 +1309,7 @@ class _MenuTile extends StatelessWidget {
         height: 58,
         margin: const EdgeInsets.only(bottom: 6),
         decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: AppColors.border,
-            ),
-          ),
+          border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
@@ -1283,9 +1318,9 @@ class _MenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontSize: 16,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontSize: 16),
               ),
             ),
             const Icon(
@@ -1301,63 +1336,154 @@ class _MenuTile extends StatelessWidget {
 }
 
 class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.category});
+  const _CategoryCard({
+    required this.category,
+    this.onTap,
+  });
 
+  final ShopCategory category;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: double.infinity,
+                    color: const Color(0xFFF8F6F2),
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(
+                      'assets/images/${category.image}',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                category.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryProductsPage extends StatelessWidget {
+  const _CategoryProductsPage({
+    required this.repository,
+    required this.userId,
+    required this.category,
+  });
+
+  final ShopRepository repository;
+  final String userId;
   final ShopCategory category;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                width: double.infinity,
-                color: const Color(0xFFF8F6F2),
-                padding: const EdgeInsets.all(12),
-                child: Image.asset(
-                  'assets/images/${category.image}',
-                  fit: BoxFit.contain,
+    return Scaffold(
+      appBar: AppBar(title: Text(category.name), centerTitle: true),
+      body: StreamBuilder<List<ShopProduct>>(
+        stream: repository.products(),
+        builder: (context, snapshot) {
+          final allProducts = snapshot.data ?? const <ShopProduct>[];
+          final products = allProducts
+              .where((item) => item.categoryId == category.id)
+              .toList();
+
+          if (products.isEmpty) {
+            return const Center(
+              child: Text('Danh mục này chưa có sản phẩm'),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: products.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final product = products[index];
+              return ListTile(
+                tileColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFFECECEC)),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            category.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SmartShopImage(
+                    source: product.image,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-          ),
-        ],
+                title: Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  formatCurrency(product.price),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ProductDetailPage(
+                        repository: repository,
+                        userId: userId,
+                        product: product,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.currentIndex,
-    required this.onChanged,
-  });
+  const _BottomBar({required this.currentIndex, required this.onChanged});
 
   final int currentIndex;
   final ValueChanged<int> onChanged;
@@ -1453,9 +1579,9 @@ class _EmptyState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1483,6 +1609,7 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final discountPercent = _discountPercent(product.oldPrice, product.price);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(compact ? 16 : 24),
@@ -1501,6 +1628,7 @@ class _ProductCard extends StatelessWidget {
                     image: product.image,
                     isFavorite: isFavorite,
                     compact: compact,
+                    discountPercent: discountPercent,
                     onFavoriteToggle: onFavoriteToggle,
                   ),
                 )
@@ -1510,6 +1638,7 @@ class _ProductCard extends StatelessWidget {
                     image: product.image,
                     isFavorite: isFavorite,
                     compact: compact,
+                    discountPercent: discountPercent,
                     onFavoriteToggle: onFavoriteToggle,
                   ),
                 ),
@@ -1519,9 +1648,9 @@ class _ProductCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontSize: compact ? 14 : 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  fontSize: compact ? 14 : 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (!compact) ...[
                 const SizedBox(height: 6),
@@ -1535,16 +1664,26 @@ class _ProductCard extends StatelessWidget {
               Text(
                 formatCurrency(product.price),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontSize: compact ? 15 : 16,
-                    ),
+                  color: AppColors.primary,
+                  fontSize: compact ? 15 : 16,
+                ),
               ),
+              if (discountPercent > 0) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '-$discountPercent%',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFd12626),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
               if (!compact) ...[
                 Text(
                   formatCurrency(product.oldPrice),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        decoration: TextDecoration.lineThrough,
-                      ),
+                    decoration: TextDecoration.lineThrough,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
@@ -1561,6 +1700,11 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
+
+  int _discountPercent(int oldPrice, int price) {
+    if (oldPrice <= 0 || oldPrice <= price) return 0;
+    return (((oldPrice - price) / oldPrice) * 100).round();
+  }
 }
 
 class _ProductImage extends StatelessWidget {
@@ -1568,12 +1712,14 @@ class _ProductImage extends StatelessWidget {
     required this.image,
     required this.isFavorite,
     required this.compact,
+    required this.discountPercent,
     required this.onFavoriteToggle,
   });
 
   final String image;
   final bool isFavorite;
   final bool compact;
+  final int discountPercent;
   final Future<void> Function() onFavoriteToggle;
 
   @override
@@ -1583,10 +1729,7 @@ class _ProductImage extends StatelessWidget {
         Positioned.fill(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(compact ? 12 : 20),
-            child: Image.asset(
-              'assets/images/$image',
-              fit: BoxFit.cover,
-            ),
+            child: SmartShopImage(source: image, fit: BoxFit.cover),
           ),
         ),
         Positioned(
@@ -1608,6 +1751,26 @@ class _ProductImage extends StatelessWidget {
             ),
           ),
         ),
+        if (discountPercent > 0)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFd12626),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '-$discountPercent%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1640,8 +1803,8 @@ class _SavedProductTile extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                child: Image.asset(
-                  'assets/images/${item.image}',
+                child: SmartShopImage(
+                  source: item.image,
                   width: 82,
                   height: 82,
                   fit: BoxFit.cover,
@@ -1659,13 +1822,16 @@ class _SavedProductTile extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 6),
-                    Text(item.soldText, style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      item.soldText,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                     const SizedBox(height: 10),
                     Text(
                       formatCurrency(item.price),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.primary,
-                          ),
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -1717,8 +1883,8 @@ class _CartTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              'assets/images/${item.image}',
+            child: SmartShopImage(
+              source: item.image,
               width: 82,
               height: 82,
               fit: BoxFit.cover,
@@ -1738,9 +1904,9 @@ class _CartTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   formatCurrency(item.price),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.primary,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: AppColors.primary),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -1764,10 +1930,7 @@ class _CartTile extends StatelessWidget {
 }
 
 class _QtyButton extends StatelessWidget {
-  const _QtyButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _QtyButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final Future<void> Function() onTap;
@@ -1796,6 +1959,7 @@ ShopProduct _productFromItem(UserProductItem item) {
     name: item.name,
     price: item.price,
     oldPrice: item.oldPrice,
+    stock: 0,
     image: item.image,
     categoryId: '',
     description: item.description,

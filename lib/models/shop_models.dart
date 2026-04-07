@@ -23,27 +23,28 @@ class ShopCategory {
     );
   }
 
-  ShopCategory copyWith({String? id, String? name, String? image, String? description}) =>
-      ShopCategory(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        image: image ?? this.image,
-        description: description ?? this.description,
-      );
+  ShopCategory copyWith({
+    String? id,
+    String? name,
+    String? image,
+    String? description,
+  }) => ShopCategory(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    image: image ?? this.image,
+    description: description ?? this.description,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'image': image,
-        'description': description,
-      };
+    'id': id,
+    'name': name,
+    'image': image,
+    'description': description,
+  };
 }
 
 class PromoBanner {
-  PromoBanner({
-    required this.id,
-    required this.image,
-  });
+  PromoBanner({required this.id, required this.image});
 
   final String id;
   final String image;
@@ -63,6 +64,7 @@ class ShopProduct {
     required this.name,
     required this.price,
     required this.oldPrice,
+    required this.stock,
     required this.image,
     required this.categoryId,
     required this.description,
@@ -74,6 +76,7 @@ class ShopProduct {
   final String name;
   final int price;
   final int oldPrice;
+  final int stock;
   final String image;
   final String categoryId;
   final String description;
@@ -82,15 +85,18 @@ class ShopProduct {
 
   factory ShopProduct.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
+    final soldText = data['soldText'] as String? ?? '';
+    final stockValue = (data['stock'] as num?)?.toInt();
     return ShopProduct(
       id: data['id'] as String? ?? doc.id,
       name: data['name'] as String? ?? '',
       price: (data['price'] as num?)?.toInt() ?? 0,
       oldPrice: (data['oldPrice'] as num?)?.toInt() ?? 0,
+      stock: stockValue ?? (soldText.toLowerCase().contains('hết') ? 0 : 999),
       image: data['image'] as String? ?? '',
       categoryId: data['categoryId'] as String? ?? '',
       description: data['description'] as String? ?? '',
-      soldText: data['soldText'] as String? ?? '',
+      soldText: soldText,
       imageKey: data['imageKey'] as String? ?? 'default.jpg',
     );
   }
@@ -100,35 +106,37 @@ class ShopProduct {
     String? name,
     int? price,
     int? oldPrice,
+    int? stock,
     String? image,
     String? categoryId,
     String? description,
     String? soldText,
     String? imageKey,
-  }) =>
-      ShopProduct(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        price: price ?? this.price,
-        oldPrice: oldPrice ?? this.oldPrice,
-        image: image ?? this.image,
-        categoryId: categoryId ?? this.categoryId,
-        description: description ?? this.description,
-        soldText: soldText ?? this.soldText,
-        imageKey: imageKey ?? this.imageKey,
-      );
+  }) => ShopProduct(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    price: price ?? this.price,
+    oldPrice: oldPrice ?? this.oldPrice,
+    stock: stock ?? this.stock,
+    image: image ?? this.image,
+    categoryId: categoryId ?? this.categoryId,
+    description: description ?? this.description,
+    soldText: soldText ?? this.soldText,
+    imageKey: imageKey ?? this.imageKey,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'price': price,
-        'oldPrice': oldPrice,
-        'image': image,
-        'categoryId': categoryId,
-        'description': description,
-        'soldText': soldText,
-        'imageKey': imageKey,
-      };
+    'id': id,
+    'name': name,
+    'price': price,
+    'oldPrice': oldPrice,
+    'stock': stock,
+    'image': image,
+    'categoryId': categoryId,
+    'description': description,
+    'soldText': soldText,
+    'imageKey': imageKey,
+  };
 
   Map<String, dynamic> toUserMap({int quantity = 1}) {
     return {
@@ -235,22 +243,27 @@ class ShopOrder {
     String? paymentMethod,
     DateTime? createdAt,
     String? userId,
-  }) =>
-      ShopOrder(
-        id: id ?? this.id,
-        status: status ?? this.status,
-        items: items ?? this.items,
-        total: total ?? this.total,
-        address: address ?? this.address,
-        paymentMethod: paymentMethod ?? this.paymentMethod,
-        createdAt: createdAt ?? this.createdAt,
-        userId: userId ?? this.userId,
-      );
+  }) => ShopOrder(
+    id: id ?? this.id,
+    status: status ?? this.status,
+    items: items ?? this.items,
+    total: total ?? this.total,
+    address: address ?? this.address,
+    paymentMethod: paymentMethod ?? this.paymentMethod,
+    createdAt: createdAt ?? this.createdAt,
+    userId: userId ?? this.userId,
+  );
 
   String get statusDisplay {
     switch (status) {
       case 'pending':
         return 'Đang xử lý';
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'review':
+        return 'Đang rà soát';
+      case 'completed':
+        return 'Hoàn thành';
       case 'confirmed':
         return 'Đã xác nhận';
       case 'shipping':
@@ -330,24 +343,23 @@ class ShopBanner {
     String? status,
     String? link,
     String? notes,
-  }) =>
-      ShopBanner(
-        id: id ?? this.id,
-        imageKey: imageKey ?? this.imageKey,
-        position: position ?? this.position,
-        status: status ?? this.status,
-        link: link ?? this.link,
-        notes: notes ?? this.notes,
-      );
+  }) => ShopBanner(
+    id: id ?? this.id,
+    imageKey: imageKey ?? this.imageKey,
+    position: position ?? this.position,
+    status: status ?? this.status,
+    link: link ?? this.link,
+    notes: notes ?? this.notes,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'imageKey': imageKey,
-        'position': position,
-        'status': status,
-        'link': link,
-        'notes': notes,
-      };
+    'id': id,
+    'imageKey': imageKey,
+    'position': position,
+    'status': status,
+    'link': link,
+    'notes': notes,
+  };
 }
 
 class ShopFlashSale {
@@ -386,24 +398,23 @@ class ShopFlashSale {
     String? startTime,
     String? endTime,
     String? status,
-  }) =>
-      ShopFlashSale(
-        id: id ?? this.id,
-        productId: productId ?? this.productId,
-        discountPercent: discountPercent ?? this.discountPercent,
-        startTime: startTime ?? this.startTime,
-        endTime: endTime ?? this.endTime,
-        status: status ?? this.status,
-      );
+  }) => ShopFlashSale(
+    id: id ?? this.id,
+    productId: productId ?? this.productId,
+    discountPercent: discountPercent ?? this.discountPercent,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    status: status ?? this.status,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'productId': productId,
-        'discountPercent': discountPercent,
-        'startTime': startTime,
-        'endTime': endTime,
-        'status': status,
-      };
+    'id': id,
+    'productId': productId,
+    'discountPercent': discountPercent,
+    'startTime': startTime,
+    'endTime': endTime,
+    'status': status,
+  };
 }
 
 class ShopUser {
@@ -446,4 +457,53 @@ class ShopUser {
       ordersCount: (data['ordersCount'] as num?)?.toInt(),
     );
   }
+}
+
+class ShippingAddress {
+  ShippingAddress({
+    required this.id,
+    required this.recipientName,
+    required this.phone,
+    required this.addressLine,
+    this.isDefault = false,
+  });
+
+  final String id;
+  final String recipientName;
+  final String phone;
+  final String addressLine;
+  final bool isDefault;
+
+  factory ShippingAddress.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? <String, dynamic>{};
+    return ShippingAddress(
+      id: doc.id,
+      recipientName: data['recipientName'] as String? ?? '',
+      phone: data['phone'] as String? ?? '',
+      addressLine: data['addressLine'] as String? ?? '',
+      isDefault: data['isDefault'] as bool? ?? false,
+    );
+  }
+
+  ShippingAddress copyWith({
+    String? id,
+    String? recipientName,
+    String? phone,
+    String? addressLine,
+    bool? isDefault,
+  }) => ShippingAddress(
+    id: id ?? this.id,
+    recipientName: recipientName ?? this.recipientName,
+    phone: phone ?? this.phone,
+    addressLine: addressLine ?? this.addressLine,
+    isDefault: isDefault ?? this.isDefault,
+  );
+
+  Map<String, dynamic> toMap() => {
+    'recipientName': recipientName,
+    'phone': phone,
+    'addressLine': addressLine,
+    'isDefault': isDefault,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 }

@@ -19,6 +19,7 @@ class AdminUsersPage extends StatefulWidget {
 
 class _AdminUsersPageState extends State<AdminUsersPage> {
   String _searchQuery = '';
+  final Set<String> _updatingUserIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search box
           Container(
             height: 38,
             decoration: BoxDecoration(
@@ -38,7 +38,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: const InputDecoration(
-                hintText: 'Tìm người dùng theo uid',
+                hintText: 'Tìm theo uid / email / tên',
                 hintStyle: TextStyle(fontSize: 11, color: Color(0xFF7a7a7a)),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -50,8 +50,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             ),
           ),
           const SizedBox(height: 10),
-
-          // User list
           FutureBuilder<List<ShopUser>>(
             future: widget.repository.getUsers(),
             builder: (context, snapshot) {
@@ -75,9 +73,12 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
               var users = snapshot.data ?? [];
               if (_searchQuery.isNotEmpty) {
-                users = users
-                    .where((u) => u.uid.toLowerCase().contains(_searchQuery.toLowerCase()))
-                    .toList();
+                final query = _searchQuery.toLowerCase();
+                users = users.where((u) {
+                  return u.uid.toLowerCase().contains(query) ||
+                      u.email.toLowerCase().contains(query) ||
+                      u.displayName.toLowerCase().contains(query);
+                }).toList();
               }
 
               if (users.isEmpty) {
@@ -95,6 +96,8 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                   return _UserListRow(
                     user: user,
                     onView: () => _showUserDetail(user),
+                    isUpdating: _updatingUserIds.contains(user.uid),
+                    onRoleChanged: (role) => _changeUserRole(user, role),
                   );
                 }),
               );
@@ -106,49 +109,165 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
   }
 
   void _showUserDetail(ShopUser user) {
+    var selectedRole = _normalizeRole(user.role);
+    var saving = false;
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Thông tin người dùng'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('UID: ${user.uid}'),
-              const SizedBox(height: 8),
-              Text('Email: ${user.email}'),
-              const SizedBox(height: 8),
-              Text('Tên: ${user.displayName}'),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F7F7),
-                  borderRadius: BorderRadius.circular(8),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Thông tin người dùng'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('UID: ${user.uid}'),
+                const SizedBox(height: 8),
+                Text('Email: ${user.email}'),
+                const SizedBox(height: 8),
+                Text('Tên: ${user.displayName}'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F7F7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Thông tin tài khoản',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      _InfoRow(label: 'Đã yêu thích', value: user.favoriteCount.toString()),
+                      _InfoRow(label: 'Giỏ hàng', value: user.cartCount.toString()),
+                      _InfoRow(label: 'Đơn hàng', value: user.orderCount.toString()),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Thông tin tài khoản',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    _InfoRow(label: 'Đã yêu thích', value: user.favoriteCount.toString()),
-                    _InfoRow(label: 'Giỏ hàng', value: user.cartCount.toString()),
-                    _InfoRow(label: 'Đơn hàng', value: user.orderCount.toString()),
+                const SizedBox(height: 12),
+                const Text(
+                  'Phân quyền',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRole,
+                  items: const [
+                    DropdownMenuItem(value: 'user', child: Text('User')),
+                    DropdownMenuItem(value: 'admin', child: Text('Admin')),
                   ],
+                  onChanged: saving
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setDialogState(() => selectedRole = value);
+                        },
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+            FilledButton(
+              onPressed: saving || selectedRole == _normalizeRole(user.role)
+                  ? null
+                  : () async {
+                      final navigator = Navigator.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+                      setDialogState(() => saving = true);
+                      try {
+                        await widget.repository.updateUserRole(
+                          userId: user.uid,
+                          role: selectedRole,
+                        );
+                        if (!mounted) return;
+                        navigator.pop();
+                        setState(() {});
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Đã cập nhật quyền thành $selectedRole')),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Không đổi được quyền: $e'),
+                            backgroundColor: Colors.red.shade700,
+                          ),
+                        );
+                      } finally {
+                        if (context.mounted) {
+                          setDialogState(() => saving = false);
+                        }
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Lưu quyền'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: Navigator.of(context).pop, child: const Text('Đóng')),
-        ],
       ),
     );
+  }
+
+  Future<void> _changeUserRole(ShopUser user, String role) async {
+    final currentRole = _normalizeRole(user.role);
+    final nextRole = _normalizeRole(role);
+    if (currentRole == nextRole) return;
+
+    setState(() => _updatingUserIds.add(user.uid));
+    try {
+      await widget.repository.updateUserRole(userId: user.uid, role: nextRole);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã đổi quyền ${user.displayName} -> $nextRole')),
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi đổi quyền: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _updatingUserIds.remove(user.uid));
+      }
+    }
+  }
+
+  String _normalizeRole(String role) {
+    return role.trim().toLowerCase() == 'admin' ? 'admin' : 'user';
   }
 }
 
@@ -156,13 +275,18 @@ class _UserListRow extends StatelessWidget {
   const _UserListRow({
     required this.user,
     required this.onView,
+    required this.onRoleChanged,
+    this.isUpdating = false,
   });
 
   final ShopUser user;
   final VoidCallback onView;
+  final ValueChanged<String> onRoleChanged;
+  final bool isUpdating;
 
   @override
   Widget build(BuildContext context) {
+    final role = user.role.trim().toLowerCase() == 'admin' ? 'admin' : 'user';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
@@ -202,8 +326,41 @@ class _UserListRow extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 96,
+            child: DropdownButtonFormField<String>(
+              initialValue: role,
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(value: 'user', child: Text('user')),
+                DropdownMenuItem(value: 'admin', child: Text('admin')),
+              ],
+              onChanged: isUpdating
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      onRoleChanged(value);
+                    },
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFea580c), width: 2),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
-          // Stats badges
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -224,14 +381,20 @@ class _UserListRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFeff5ff)),
               ),
-              child: const Text(
-                'Xem',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2563eb),
-                ),
-              ),
+              child: isUpdating
+                  ? const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'Xem',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2563eb),
+                      ),
+                    ),
             ),
           ),
         ],

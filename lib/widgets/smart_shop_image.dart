@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -32,6 +33,24 @@ class SmartShopImage extends StatelessWidget {
 
     final value = (source ?? '').trim();
     if (value.isEmpty) return _fallback();
+
+    if (value.startsWith('data:image/')) {
+      try {
+        final commaIndex = value.indexOf(',');
+        if (commaIndex <= 0) return _fallback();
+        final base64Part = value.substring(commaIndex + 1);
+        final bytes = base64Decode(base64Part);
+        return Image.memory(
+          bytes,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (_, _, _) => _fallback(),
+        );
+      } catch (_) {
+        return _fallback();
+      }
+    }
 
     if (_isNetwork(value)) {
       return Image.network(
