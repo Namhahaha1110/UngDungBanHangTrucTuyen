@@ -44,16 +44,29 @@ class ShopCategory {
 }
 
 class PromoBanner {
-  PromoBanner({required this.id, required this.image});
+  PromoBanner({
+    required this.id,
+    required this.image,
+    this.status = 'active',
+    this.position = '',
+  });
 
   final String id;
   final String image;
+  final String status;
+  final String position;
 
   factory PromoBanner.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
+    final imageKey = data['imageKey'] as String? ?? '';
+    final image = imageKey.isNotEmpty
+        ? imageKey
+        : (data['image'] as String? ?? '');
     return PromoBanner(
       id: data['id'] as String? ?? doc.id,
-      image: data['image'] as String? ?? '',
+      image: image,
+      status: data['status'] as String? ?? 'active',
+      position: data['position'] as String? ?? '',
     );
   }
 }
@@ -200,6 +213,8 @@ class ShopOrder {
     required this.status,
     required this.items,
     required this.total,
+    required this.finalTotal,
+    required this.voucherDiscount,
     required this.address,
     required this.paymentMethod,
     required this.createdAt,
@@ -210,12 +225,14 @@ class ShopOrder {
   final String status;
   final List<OrderItem> items;
   final int total;
+  final int finalTotal;
+  final int voucherDiscount;
   final String address;
   final String paymentMethod;
   final DateTime? createdAt;
   final String userId;
 
-  int get totalAmount => total;
+  int get totalAmount => finalTotal > 0 ? finalTotal : total;
 
   factory ShopOrder.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
@@ -227,6 +244,8 @@ class ShopOrder {
           .map((item) => OrderItem.fromMap(item as Map<String, dynamic>))
           .toList(),
       total: (data['total'] as num?)?.toInt() ?? 0,
+      finalTotal: (data['finalTotal'] as num?)?.toInt() ?? 0,
+      voucherDiscount: (data['voucherDiscount'] as num?)?.toInt() ?? 0,
       address: data['address'] as String? ?? '',
       paymentMethod: data['paymentMethod'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
@@ -239,6 +258,8 @@ class ShopOrder {
     String? status,
     List<OrderItem>? items,
     int? total,
+    int? finalTotal,
+    int? voucherDiscount,
     String? address,
     String? paymentMethod,
     DateTime? createdAt,
@@ -248,6 +269,8 @@ class ShopOrder {
     status: status ?? this.status,
     items: items ?? this.items,
     total: total ?? this.total,
+    finalTotal: finalTotal ?? this.finalTotal,
+    voucherDiscount: voucherDiscount ?? this.voucherDiscount,
     address: address ?? this.address,
     paymentMethod: paymentMethod ?? this.paymentMethod,
     createdAt: createdAt ?? this.createdAt,

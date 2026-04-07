@@ -149,6 +149,10 @@ class _BannerListRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = banner.status == 'active';
+    final imageSource = _resolveBannerImage(
+      bannerId: banner.id,
+      imageKey: banner.imageKey,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -167,7 +171,7 @@ class _BannerListRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             clipBehavior: Clip.antiAlias,
-            child: SmartShopImage(source: banner.imageKey, fit: BoxFit.cover),
+            child: SmartShopImage(source: imageSource, fit: BoxFit.cover),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -243,6 +247,32 @@ class _BannerListRow extends StatelessWidget {
       ),
     );
   }
+
+  String _resolveBannerImage({
+    required String bannerId,
+    required String imageKey,
+  }) {
+    final id = bannerId.trim().toLowerCase();
+    if (id == 'banner_1' || id == 'banner_2' || id == 'banner_3') {
+      return _defaultBannerAssetForId(bannerId);
+    }
+
+    final source = imageKey.trim();
+    if (source.isNotEmpty &&
+        source != 'default.jpg' &&
+        !source.startsWith('data:image/')) {
+      return source;
+    }
+    return _defaultBannerAssetForId(bannerId);
+  }
+
+  String _defaultBannerAssetForId(String bannerId) {
+    final id = bannerId.trim().toLowerCase();
+    if (id == 'banner_1') return 'banner_1.png';
+    if (id == 'banner_2') return 'banner_2.png';
+    if (id == 'banner_3') return 'banner_3.png';
+    return 'banner_1.png';
+  }
 }
 
 class _TinyButton extends StatelessWidget {
@@ -314,7 +344,7 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
     _positionCtrl = TextEditingController(text: widget.banner?.position ?? '');
     _linkCtrl = TextEditingController(text: widget.banner?.link ?? '');
     _imageCtrl = TextEditingController(text: widget.banner?.imageKey ?? '');
-    _status = widget.banner?.status ?? 'draft';
+    _status = widget.banner?.status ?? 'active';
   }
 
   @override
@@ -375,7 +405,9 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                     onChanged: (_) => setState(() {}),
                   ),
                   _ImagePickerBlock(
-                    source: _imageCtrl.text.trim(),
+                    source: _imageCtrl.text.trim().isEmpty
+                        ? _defaultBannerAssetForId(_idCtrl.text.trim())
+                        : _imageCtrl.text.trim(),
                     memoryBytes: _pickedImageBytes,
                     onPick: _pickImage,
                   ),
@@ -565,7 +597,9 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
         );
       }
       if (imageRef.isEmpty) {
-        imageRef = widget.banner?.imageKey ?? 'default.jpg';
+        imageRef =
+            widget.banner?.imageKey ??
+            _defaultBannerAssetForId(_idCtrl.text.trim());
       }
 
       final banner = ShopBanner(
@@ -593,6 +627,14 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
       ).showSnackBar(SnackBar(content: Text('Lưu thất bại: $e')));
       setState(() => _saving = false);
     }
+  }
+
+  String _defaultBannerAssetForId(String bannerId) {
+    final id = bannerId.toLowerCase();
+    if (id == 'banner_1') return 'banner_1.png';
+    if (id == 'banner_2') return 'banner_2.png';
+    if (id == 'banner_3') return 'banner_3.png';
+    return 'banner_1.png';
   }
 }
 

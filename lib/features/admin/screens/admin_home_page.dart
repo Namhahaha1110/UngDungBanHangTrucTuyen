@@ -66,18 +66,25 @@ class _AdminHomePageState extends State<AdminHomePage> {
             moduleIndex: 5,
           ),
           _AdminModuleItem(
+            name: 'Doanh thu',
+            desc: '${stats.revenueOrderCount} đơn đủ điều kiện',
+            badge: 'Chart',
+            keywords: 'bao cao doanh thu chart revenue',
+            moduleIndex: 6,
+          ),
+          _AdminModuleItem(
             name: 'Đơn hàng',
             desc: '${stats.orderCount} đơn',
             badge: 'Theo dõi',
             keywords: 'don hang order orders',
-            moduleIndex: 6,
+            moduleIndex: 7,
           ),
           _AdminModuleItem(
             name: 'Người dùng',
             desc: '${stats.userCount} tài khoản',
             badge: 'Cẩn thận',
             keywords: 'nguoi dung user users role',
-            moduleIndex: 7,
+            moduleIndex: 8,
           ),
         ];
         final quickActions = [
@@ -106,10 +113,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
             moduleIndex: 5,
           ),
           _AdminQuickActionItem(
+            title: 'Xem báo cáo doanh thu',
+            desc: 'Theo dõi doanh thu theo ngày và trạng thái đơn',
+            keywords: 'doanh thu chart report',
+            moduleIndex: 6,
+          ),
+          _AdminQuickActionItem(
             title: 'Rà soát người dùng',
             desc: 'Kiểm tra favorites, cart, orders theo uid',
             keywords: 'nguoi dung users review role',
-            moduleIndex: 7,
+            moduleIndex: 8,
           ),
         ];
         final query = _normalize(_searchQuery);
@@ -338,8 +351,14 @@ class _AdminHomePageState extends State<AdminHomePage> {
         .where((sale) => (sale.status as String?) == 'inactive')
         .length;
 
+    final paidStatuses = {'paid', 'completed', 'delivered', 'confirmed'};
+    final revenueOrderCount = orders.where((order) {
+      final status = (order.status as String?)?.toLowerCase().trim() ?? '';
+      return paidStatuses.contains(status);
+    }).length;
+
     return _AdminDashboardStats(
-      moduleCount: 7,
+      moduleCount: 8,
       pendingItems: pendingOrderCount,
       dataAlerts: outOfStock + inactiveSales,
       productCount: products.length,
@@ -347,6 +366,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       bannerCount: banners.length,
       flashSaleCount: sales.length,
       voucherCount: vouchers.length,
+      revenueOrderCount: revenueOrderCount,
       orderCount: orders.length,
       userCount: users.length,
     );
@@ -393,6 +413,7 @@ class _AdminDashboardStats {
     required this.bannerCount,
     required this.flashSaleCount,
     required this.voucherCount,
+    required this.revenueOrderCount,
     required this.orderCount,
     required this.userCount,
   });
@@ -405,11 +426,12 @@ class _AdminDashboardStats {
   final int bannerCount;
   final int flashSaleCount;
   final int voucherCount;
+  final int revenueOrderCount;
   final int orderCount;
   final int userCount;
 
   factory _AdminDashboardStats.empty() => const _AdminDashboardStats(
-    moduleCount: 7,
+    moduleCount: 8,
     pendingItems: 0,
     dataAlerts: 0,
     productCount: 0,
@@ -417,6 +439,7 @@ class _AdminDashboardStats {
     bannerCount: 0,
     flashSaleCount: 0,
     voucherCount: 0,
+    revenueOrderCount: 0,
     orderCount: 0,
     userCount: 0,
   );
@@ -623,6 +646,10 @@ class _Badge extends StatelessWidget {
       case 'Coupon':
         bgColor = const Color(0xFFfff2e8);
         textColor = const Color(0xFFea580c);
+        break;
+      case 'Chart':
+        bgColor = const Color(0xFFeff5ff);
+        textColor = const Color(0xFF2563eb);
         break;
       default:
         bgColor = const Color(0xFFfff1f1);

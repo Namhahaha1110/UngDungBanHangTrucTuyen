@@ -8,6 +8,7 @@ import 'screens/admin_categories_page.dart';
 import 'screens/admin_home_page.dart';
 import 'screens/admin_orders_page.dart';
 import 'screens/admin_products_page.dart';
+import 'screens/admin_revenue_page.dart';
 import 'screens/admin_sales_page.dart';
 import 'screens/admin_users_page.dart';
 import 'screens/admin_vouchers_page.dart';
@@ -34,11 +35,22 @@ class _AdminShellState extends State<AdminShell> {
     'Banner',
     'Flash Sale',
     'Voucher',
+    'Doanh thu',
     'Đơn hàng',
     'Người dùng',
   ];
 
-  final List<String> _navIcons = ['◦', '☐', '▥', '⬚', '⚡', '🎟', '📋', '👤'];
+  final List<String> _navIcons = [
+    '◦',
+    '☐',
+    '▥',
+    '⬚',
+    '⚡',
+    '🎟',
+    '📈',
+    '📋',
+    '👤',
+  ];
   final List<String> _navLabels = [
     'Tổng quan',
     'Sản phẩm',
@@ -46,6 +58,7 @@ class _AdminShellState extends State<AdminShell> {
     'Banner',
     'Flash Sale',
     'Voucher',
+    'Doanh thu',
     'Đơn hàng',
     'Người dùng',
   ];
@@ -138,6 +151,10 @@ class _AdminShellState extends State<AdminShell> {
                       repository: widget.repository,
                       userId: widget.userId,
                     ),
+                    AdminRevenuePage(
+                      repository: widget.repository,
+                      userId: widget.userId,
+                    ),
                     AdminOrdersPage(
                       repository: widget.repository,
                       userId: widget.userId,
@@ -157,7 +174,7 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   List<Widget> _buildDrawerItems() {
-    return List.generate(8, (index) {
+    return List.generate(9, (index) {
       final isActive = _currentIndex == index;
       return ListTile(
         leading: Text(
@@ -239,6 +256,13 @@ class _AdminShellState extends State<AdminShell> {
                 onTap: () {
                   Navigator.of(context).pop();
                   _openModule(5);
+                },
+              ),
+              _CreateActionTile(
+                label: 'Báo cáo doanh thu',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _openModule(6);
                 },
               ),
               _CreateActionTile(

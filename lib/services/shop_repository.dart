@@ -15,11 +15,22 @@ class ShopRepository {
   final FirebaseStorage _storage;
 
   Stream<List<PromoBanner>> banners() {
-    return _firestore
-        .collection('banners')
-        .orderBy('id')
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map(PromoBanner.fromDoc).toList());
+    return _firestore.collection('banners').snapshots().map((snapshot) {
+      final banners = snapshot.docs.map(PromoBanner.fromDoc).where((banner) {
+        final status = banner.status.trim().toLowerCase();
+        return status.isEmpty || status == 'active';
+      }).toList();
+
+      banners.sort((a, b) {
+        final aPos = int.tryParse(a.position);
+        final bPos = int.tryParse(b.position);
+        if (aPos != null && bPos != null) return aPos.compareTo(bPos);
+        if (aPos != null) return -1;
+        if (bPos != null) return 1;
+        return a.id.compareTo(b.id);
+      });
+      return banners;
+    });
   }
 
   Stream<List<ShopCategory>> categories() {

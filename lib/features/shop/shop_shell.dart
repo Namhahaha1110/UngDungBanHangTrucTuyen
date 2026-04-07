@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -202,39 +204,7 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: StreamBuilder<List<PromoBanner>>(
-            stream: repository.banners(),
-            builder: (context, snapshot) {
-              final banners = snapshot.data ?? const <PromoBanner>[];
-              if (banners.isEmpty) return const SizedBox.shrink();
-              return SizedBox(
-                height: 182,
-                child: PageView.builder(
-                  controller: PageController(viewportFraction: 0.928),
-                  itemCount: banners.length,
-                  itemBuilder: (context, index) {
-                    final banner = banners[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 8,
-                        top: 18,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Image.asset(
-                          'assets/images/${banner.image}',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ),
+        SliverToBoxAdapter(child: _HomeBannerCarousel(repository: repository)),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 33, 16, 0),
@@ -452,6 +422,97 @@ class _HomeTab extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _HomeBannerCarousel extends StatefulWidget {
+  const _HomeBannerCarousel({required this.repository});
+
+  final ShopRepository repository;
+
+  @override
+  State<_HomeBannerCarousel> createState() => _HomeBannerCarouselState();
+}
+
+class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
+  late final PageController _pageController;
+  StreamSubscription<List<PromoBanner>>? _bannerSub;
+  Timer? _autoSlideTimer;
+  List<PromoBanner> _banners = const [];
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.928);
+    _bannerSub = widget.repository.banners().listen((fetched) {
+      final banners = <PromoBanner>[
+        PromoBanner(id: 'home_fixed_banner_1', image: 'banner_1.png'),
+        PromoBanner(id: 'home_fixed_banner_2', image: 'banner_2.png'),
+        PromoBanner(id: 'home_fixed_banner_3', image: 'banner_3.png'),
+        ...fetched.where((item) {
+          final id = item.id.trim().toLowerCase();
+          if (id == 'banner_1' || id == 'banner_2' || id == 'banner_3') {
+            return false;
+          }
+          return item.image.trim().isNotEmpty;
+        }),
+      ];
+      if (!mounted) return;
+      setState(() {
+        _banners = banners;
+        if (_currentIndex >= _banners.length) {
+          _currentIndex = 0;
+        }
+      });
+      _syncAutoSlide();
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoSlideTimer?.cancel();
+    _bannerSub?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_banners.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 182,
+      child: PageView.builder(
+        controller: _pageController,
+        onPageChanged: (index) => _currentIndex = index,
+        itemCount: _banners.length,
+        itemBuilder: (context, index) {
+          final banner = _banners[index];
+          return Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8, top: 18),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: SmartShopImage(source: banner.image, fit: BoxFit.cover),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _syncAutoSlide() {
+    _autoSlideTimer?.cancel();
+    if (_banners.length <= 1) return;
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted || !_pageController.hasClients || _banners.isEmpty) return;
+      final next = (_currentIndex + 1) % _banners.length;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOut,
+      );
+      _currentIndex = next;
+    });
   }
 }
 
