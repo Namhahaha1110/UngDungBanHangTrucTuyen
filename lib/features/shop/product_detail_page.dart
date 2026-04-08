@@ -161,7 +161,19 @@ class ProductDetailPage extends StatelessWidget {
                       valueOverflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 27),
-                    const _SizeRow(),
+                    _SizeRow(
+                      value: product.sizeOptions.isEmpty
+                          ? 'Đang cập nhật'
+                          : product.sizeOptions.join(' • '),
+                    ),
+                    if (product.colorOptions.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _InfoRow(
+                        label: 'Màu sắc',
+                        value: product.colorOptions.join(' • '),
+                        slotWidth: 120,
+                      ),
+                    ],
                     const SizedBox(height: 29),
                     const _InfoRow(
                       label: 'Địa chỉ',
@@ -241,15 +253,35 @@ class ProductDetailPage extends StatelessWidget {
   }
 
   Future<void> _handleAddToCart(BuildContext context) async {
-    await repository.addToCart(userId, product);
+    final selection = await _pickVariant(context);
+    if (selection == null) return;
+    await repository.addToCart(
+      userId,
+      product,
+      selectedSize: selection.$1,
+      selectedColor: selection.$2,
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã thêm sản phẩm vào giỏ hàng.')),
+      SnackBar(
+        content: Text(
+          'Đã thêm sản phẩm vào giỏ'
+          '${selection.$1.isEmpty ? '' : ' (Size ${selection.$1})'}'
+          '${selection.$2.isEmpty ? '' : ' - Màu ${selection.$2}'}.',
+        ),
+      ),
     );
   }
 
   Future<void> _handleBuyNow(BuildContext context) async {
-    await repository.addToCart(userId, product);
+    final selection = await _pickVariant(context);
+    if (selection == null) return;
+    await repository.addToCart(
+      userId,
+      product,
+      selectedSize: selection.$1,
+      selectedColor: selection.$2,
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -257,6 +289,104 @@ class ProductDetailPage extends StatelessWidget {
           'Đã thêm sản phẩm. Bạn có thể thanh toán trong giỏ hàng.',
         ),
       ),
+    );
+  }
+
+  Future<(String, String)?> _pickVariant(BuildContext context) async {
+    final sizes = product.sizeOptions.isEmpty
+        ? const <String>['M']
+        : product.sizeOptions;
+    final colors = product.colorOptions;
+    var selectedSize = sizes.first;
+    var selectedColor = colors.isNotEmpty ? colors.first : '';
+
+    return showModalBottomSheet<(String, String)>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chọn phiên bản',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Size',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: sizes.map((size) {
+                      final selected = size == selectedSize;
+                      return ChoiceChip(
+                        label: Text(size),
+                        selected: selected,
+                        onSelected: (_) {
+                          setLocalState(() => selectedSize = size);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  if (colors.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      'Màu sắc',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: colors.map((color) {
+                        final selected = color == selectedColor;
+                        return ChoiceChip(
+                          label: Text(color),
+                          selected: selected,
+                          onSelected: (_) {
+                            setLocalState(() => selectedColor = color);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pop((selectedSize, selectedColor));
+                      },
+                      child: const Text('Xác nhận'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -584,16 +714,18 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _SizeRow extends StatelessWidget {
-  const _SizeRow();
+  const _SizeRow({required this.value});
+
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.only(left: 13),
       child: Row(
         children: [
           SizedBox(width: 107, child: _SizeLabel()),
-          _SizeValue(),
+          _SizeValue(value: value),
         ],
       ),
     );
@@ -618,12 +750,14 @@ class _SizeLabel extends StatelessWidget {
 }
 
 class _SizeValue extends StatelessWidget {
-  const _SizeValue();
+  const _SizeValue({required this.value});
+
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      '30-41',
+      value,
       style: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w400,

@@ -8,7 +8,10 @@ class SeedService {
   Future<void> seedIfNeeded() async {
     final categoriesRef = _firestore.collection('categories');
     final existing = await categoriesRef.limit(1).get();
-    if (existing.docs.isNotEmpty) return;
+    if (existing.docs.isNotEmpty) {
+      await _backfillProductVariants();
+      return;
+    }
 
     final batch = _firestore.batch();
 
@@ -68,6 +71,8 @@ class SeedService {
         'categoryId': 'men',
         'isFavorite': true,
         'soldText': 'Đã bán 1k+',
+        'sizeOptions': ['29', '30', '31', '32', '33'],
+        'colorOptions': ['Xanh denim', 'Đen'],
         'description':
             'Quần jean màu xanh denim, form suông hiện đại, cạp cao tôn dáng, chất liệu dày dặn với đường may nổi tinh tế.',
       },
@@ -80,6 +85,8 @@ class SeedService {
         'categoryId': 'men',
         'isFavorite': false,
         'soldText': 'Đã bán 600+',
+        'sizeOptions': ['S', 'M', 'L', 'XL'],
+        'colorOptions': ['Đen', 'Trắng', 'Xám'],
         'description': 'Áo nỉ basic dễ phối, chất vải dày vừa, form trẻ trung.',
       },
       {
@@ -91,6 +98,8 @@ class SeedService {
         'categoryId': 'women',
         'isFavorite': true,
         'soldText': 'Đã bán 800+',
+        'sizeOptions': ['S', 'M', 'L', 'XL'],
+        'colorOptions': ['Trắng', 'Đen', 'Be'],
         'description': 'Áo thun form regular, mặc thường ngày thoải mái.',
       },
       {
@@ -102,6 +111,8 @@ class SeedService {
         'categoryId': 'home',
         'isFavorite': false,
         'soldText': 'Đã bán 300+',
+        'sizeOptions': ['Chuẩn'],
+        'colorOptions': ['Bạc', 'Đen'],
         'description': 'Pin sạc dự phòng nhỏ gọn, hỗ trợ sạc nhanh PD 20W.',
       },
     ];
@@ -125,5 +136,31 @@ class SeedService {
     }
 
     await batch.commit();
+    await _backfillProductVariants();
+  }
+
+  Future<void> _backfillProductVariants() async {
+    final snapshot = await _firestore.collection('products').get();
+    if (snapshot.docs.isEmpty) return;
+    final batch = _firestore.batch();
+    var hasChanges = false;
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final currentSizes = (data['sizeOptions'] as List?) ?? const [];
+      final currentColors = (data['colorOptions'] as List?) ?? const [];
+      if (currentSizes.isNotEmpty && currentColors.isNotEmpty) continue;
+      hasChanges = true;
+      batch.set(doc.reference, {
+        'sizeOptions': currentSizes.isNotEmpty
+            ? currentSizes
+            : ['S', 'M', 'L', 'XL'],
+        'colorOptions': currentColors.isNotEmpty
+            ? currentColors
+            : ['Đen', 'Trắng'],
+      }, SetOptions(merge: true));
+    }
+    if (hasChanges) {
+      await batch.commit();
+    }
   }
 }

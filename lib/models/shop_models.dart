@@ -49,12 +49,18 @@ class PromoBanner {
     required this.image,
     this.status = 'active',
     this.position = '',
+    this.productIds = const [],
+    this.campaignName = '',
+    this.campaignDiscountPercent = 0,
   });
 
   final String id;
   final String image;
   final String status;
   final String position;
+  final List<String> productIds;
+  final String campaignName;
+  final int campaignDiscountPercent;
 
   factory PromoBanner.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
@@ -67,6 +73,10 @@ class PromoBanner {
       image: image,
       status: data['status'] as String? ?? 'active',
       position: data['position'] as String? ?? '',
+      productIds: _readStringList(data['productIds']),
+      campaignName: data['campaignName'] as String? ?? '',
+      campaignDiscountPercent:
+          (data['campaignDiscountPercent'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -83,6 +93,8 @@ class ShopProduct {
     required this.description,
     required this.soldText,
     this.imageKey = 'default.jpg',
+    this.sizeOptions = const [],
+    this.colorOptions = const [],
   });
 
   final String id;
@@ -95,6 +107,8 @@ class ShopProduct {
   final String description;
   final String soldText;
   final String imageKey;
+  final List<String> sizeOptions;
+  final List<String> colorOptions;
 
   factory ShopProduct.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
@@ -111,6 +125,8 @@ class ShopProduct {
       description: data['description'] as String? ?? '',
       soldText: soldText,
       imageKey: data['imageKey'] as String? ?? 'default.jpg',
+      sizeOptions: _readStringList(data['sizeOptions']),
+      colorOptions: _readStringList(data['colorOptions']),
     );
   }
 
@@ -125,6 +141,8 @@ class ShopProduct {
     String? description,
     String? soldText,
     String? imageKey,
+    List<String>? sizeOptions,
+    List<String>? colorOptions,
   }) => ShopProduct(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -136,6 +154,8 @@ class ShopProduct {
     description: description ?? this.description,
     soldText: soldText ?? this.soldText,
     imageKey: imageKey ?? this.imageKey,
+    sizeOptions: sizeOptions ?? this.sizeOptions,
+    colorOptions: colorOptions ?? this.colorOptions,
   );
 
   Map<String, dynamic> toMap() => {
@@ -149,9 +169,15 @@ class ShopProduct {
     'description': description,
     'soldText': soldText,
     'imageKey': imageKey,
+    'sizeOptions': sizeOptions,
+    'colorOptions': colorOptions,
   };
 
-  Map<String, dynamic> toUserMap({int quantity = 1}) {
+  Map<String, dynamic> toUserMap({
+    int quantity = 1,
+    String? selectedSize,
+    String? selectedColor,
+  }) {
     return {
       'productId': id,
       'name': name,
@@ -161,6 +187,8 @@ class ShopProduct {
       'description': description,
       'soldText': soldText,
       'quantity': quantity,
+      'selectedSize': selectedSize ?? '',
+      'selectedColor': selectedColor ?? '',
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -177,6 +205,8 @@ class UserProductItem {
     required this.description,
     required this.soldText,
     required this.quantity,
+    this.selectedSize = '',
+    this.selectedColor = '',
   });
 
   final String id;
@@ -188,6 +218,8 @@ class UserProductItem {
   final String description;
   final String soldText;
   final int quantity;
+  final String selectedSize;
+  final String selectedColor;
 
   factory UserProductItem.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
@@ -201,10 +233,38 @@ class UserProductItem {
       description: data['description'] as String? ?? '',
       soldText: data['soldText'] as String? ?? '',
       quantity: (data['quantity'] as num?)?.toInt() ?? 1,
+      selectedSize: data['selectedSize'] as String? ?? '',
+      selectedColor: data['selectedColor'] as String? ?? '',
     );
   }
 
   int get totalPrice => price * quantity;
+
+  UserProductItem copyWith({
+    String? id,
+    String? productId,
+    String? name,
+    int? price,
+    int? oldPrice,
+    String? image,
+    String? description,
+    String? soldText,
+    int? quantity,
+    String? selectedSize,
+    String? selectedColor,
+  }) => UserProductItem(
+    id: id ?? this.id,
+    productId: productId ?? this.productId,
+    name: name ?? this.name,
+    price: price ?? this.price,
+    oldPrice: oldPrice ?? this.oldPrice,
+    image: image ?? this.image,
+    description: description ?? this.description,
+    soldText: soldText ?? this.soldText,
+    quantity: quantity ?? this.quantity,
+    selectedSize: selectedSize ?? this.selectedSize,
+    selectedColor: selectedColor ?? this.selectedColor,
+  );
 }
 
 class ShopOrder {
@@ -308,6 +368,8 @@ class OrderItem {
     required this.image,
     required this.price,
     required this.quantity,
+    this.selectedSize = '',
+    this.selectedColor = '',
   });
 
   final String productId;
@@ -315,6 +377,8 @@ class OrderItem {
   final String image;
   final int price;
   final int quantity;
+  final String selectedSize;
+  final String selectedColor;
 
   factory OrderItem.fromMap(Map<String, dynamic> data) {
     return OrderItem(
@@ -323,10 +387,31 @@ class OrderItem {
       image: data['image'] as String? ?? '',
       price: (data['price'] as num?)?.toInt() ?? 0,
       quantity: (data['quantity'] as num?)?.toInt() ?? 1,
+      selectedSize: data['selectedSize'] as String? ?? '',
+      selectedColor: data['selectedColor'] as String? ?? '',
     );
   }
 
   int get totalPrice => price * quantity;
+}
+
+List<String> _readStringList(dynamic raw) {
+  if (raw is List) {
+    return raw
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
+  }
+  if (raw is String) {
+    return raw
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
+  }
+  return const [];
 }
 
 // Admin models
@@ -338,6 +423,9 @@ class ShopBanner {
     required this.status,
     this.link = '',
     this.notes = '',
+    this.productIds = const [],
+    this.campaignName = '',
+    this.campaignDiscountPercent = 0,
   });
 
   final String id;
@@ -346,6 +434,9 @@ class ShopBanner {
   final String status; // 'active' | 'draft'
   final String link;
   final String notes;
+  final List<String> productIds;
+  final String campaignName;
+  final int campaignDiscountPercent;
 
   factory ShopBanner.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? <String, dynamic>{};
@@ -356,6 +447,10 @@ class ShopBanner {
       status: data['status'] as String? ?? 'draft',
       link: data['link'] as String? ?? '',
       notes: data['notes'] as String? ?? '',
+      productIds: _readStringList(data['productIds']),
+      campaignName: data['campaignName'] as String? ?? '',
+      campaignDiscountPercent:
+          (data['campaignDiscountPercent'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -366,6 +461,9 @@ class ShopBanner {
     String? status,
     String? link,
     String? notes,
+    List<String>? productIds,
+    String? campaignName,
+    int? campaignDiscountPercent,
   }) => ShopBanner(
     id: id ?? this.id,
     imageKey: imageKey ?? this.imageKey,
@@ -373,6 +471,10 @@ class ShopBanner {
     status: status ?? this.status,
     link: link ?? this.link,
     notes: notes ?? this.notes,
+    productIds: productIds ?? this.productIds,
+    campaignName: campaignName ?? this.campaignName,
+    campaignDiscountPercent:
+        campaignDiscountPercent ?? this.campaignDiscountPercent,
   );
 
   Map<String, dynamic> toMap() => {
@@ -382,6 +484,9 @@ class ShopBanner {
     'status': status,
     'link': link,
     'notes': notes,
+    'productIds': productIds,
+    'campaignName': campaignName,
+    'campaignDiscountPercent': campaignDiscountPercent,
   };
 }
 

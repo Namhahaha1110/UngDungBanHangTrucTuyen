@@ -109,6 +109,19 @@ class CartPage extends StatelessWidget {
                                     fontSize: 12,
                                   ),
                                 ),
+                                if (item.selectedSize.isNotEmpty ||
+                                    item.selectedColor.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Phân loại: '
+                                    '${item.selectedSize.isEmpty ? 'N/A' : item.selectedSize}'
+                                    '${item.selectedColor.isEmpty ? '' : ' / ${item.selectedColor}'}',
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),

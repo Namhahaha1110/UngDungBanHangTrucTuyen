@@ -42,6 +42,7 @@ class AdminShellWrapper extends StatelessWidget {
           return AdminShell(
             repository: repository,
             userId: user.uid,
+            authService: authService,
           );
         }
       },

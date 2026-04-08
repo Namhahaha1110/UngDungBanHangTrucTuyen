@@ -220,6 +220,25 @@ class _BannerListRow extends StatelessWidget {
                         color: Color(0xFF7a7a7a),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'SP: ${banner.productIds.length}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF7a7a7a),
+                      ),
+                    ),
+                    if (banner.campaignDiscountPercent > 0) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        'Giảm ${banner.campaignDiscountPercent}%',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFFea580c),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -332,10 +351,15 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
   late TextEditingController _positionCtrl;
   late TextEditingController _linkCtrl;
   late TextEditingController _imageCtrl;
+  late TextEditingController _campaignNameCtrl;
+  late TextEditingController _campaignDiscountCtrl;
   late String _status;
   Uint8List? _pickedImageBytes;
   String? _pickedImageName;
   bool _saving = false;
+  bool _loadingProducts = true;
+  List<ShopProduct> _allProducts = const [];
+  final Set<String> _selectedProductIds = <String>{};
 
   @override
   void initState() {
@@ -344,7 +368,15 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
     _positionCtrl = TextEditingController(text: widget.banner?.position ?? '');
     _linkCtrl = TextEditingController(text: widget.banner?.link ?? '');
     _imageCtrl = TextEditingController(text: widget.banner?.imageKey ?? '');
+    _campaignNameCtrl = TextEditingController(
+      text: widget.banner?.campaignName ?? '',
+    );
+    _campaignDiscountCtrl = TextEditingController(
+      text: (widget.banner?.campaignDiscountPercent ?? 0).toString(),
+    );
     _status = widget.banner?.status ?? 'active';
+    _selectedProductIds.addAll(widget.banner?.productIds ?? const []);
+    _loadProducts();
   }
 
   @override
@@ -353,6 +385,8 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
     _positionCtrl.dispose();
     _linkCtrl.dispose();
     _imageCtrl.dispose();
+    _campaignNameCtrl.dispose();
+    _campaignDiscountCtrl.dispose();
     super.dispose();
   }
 
@@ -400,6 +434,14 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                   _FormField(label: 'Vị trí', controller: _positionCtrl),
                   _FormField(label: 'Link', controller: _linkCtrl),
                   _FormField(
+                    label: 'Tên chương trình',
+                    controller: _campaignNameCtrl,
+                  ),
+                  _FormField(
+                    label: 'Giảm giá (%) cho banner',
+                    controller: _campaignDiscountCtrl,
+                  ),
+                  _FormField(
                     label: 'Image key / URL',
                     controller: _imageCtrl,
                     onChanged: (_) => setState(() {}),
@@ -410,6 +452,13 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
                         : _imageCtrl.text.trim(),
                     memoryBytes: _pickedImageBytes,
                     onPick: _pickImage,
+                  ),
+                  const SizedBox(height: 2),
+                  _ProductSelectorSection(
+                    loading: _loadingProducts,
+                    products: _allProducts,
+                    selectedIds: _selectedProductIds,
+                    onToggle: _toggleProduct,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,6 +658,10 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
         status: _status,
         link: _linkCtrl.text.trim(),
         notes: widget.banner?.notes ?? '',
+        productIds: _selectedProductIds.toList(),
+        campaignName: _campaignNameCtrl.text.trim(),
+        campaignDiscountPercent:
+            int.tryParse(_campaignDiscountCtrl.text.trim()) ?? 0,
       );
 
       if (widget.banner == null) {
@@ -629,12 +682,198 @@ class _BannerFormDialogState extends State<_BannerFormDialog> {
     }
   }
 
+  Future<void> _loadProducts() async {
+    try {
+      final products = await widget.repository.getProducts();
+      if (!mounted) return;
+      setState(() {
+        _allProducts = products;
+        _loadingProducts = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingProducts = false);
+    }
+  }
+
+  void _toggleProduct(String productId) {
+    setState(() {
+      if (_selectedProductIds.contains(productId)) {
+        _selectedProductIds.remove(productId);
+      } else {
+        _selectedProductIds.add(productId);
+      }
+    });
+  }
+
   String _defaultBannerAssetForId(String bannerId) {
     final id = bannerId.toLowerCase();
     if (id == 'banner_1') return 'banner_1.png';
     if (id == 'banner_2') return 'banner_2.png';
     if (id == 'banner_3') return 'banner_3.png';
     return 'banner_1.png';
+  }
+}
+
+class _ProductSelectorSection extends StatefulWidget {
+  const _ProductSelectorSection({
+    required this.loading,
+    required this.products,
+    required this.selectedIds,
+    required this.onToggle,
+  });
+
+  final bool loading;
+  final List<ShopProduct> products;
+  final Set<String> selectedIds;
+  final ValueChanged<String> onToggle;
+
+  @override
+  State<_ProductSelectorSection> createState() => _ProductSelectorSectionState();
+}
+
+class _ProductSelectorSectionState extends State<_ProductSelectorSection> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredProducts = widget.products.where((product) {
+      if (_query.isEmpty) return true;
+      final keyword = _query.toLowerCase();
+      return product.name.toLowerCase().contains(keyword) ||
+          product.id.toLowerCase().contains(keyword);
+    }).toList();
+    final preview = filteredProducts.take(40).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 6),
+          child: Text(
+            'Sản phẩm trong chương trình banner',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF171717),
+            ),
+          ),
+        ),
+        TextField(
+          controller: _searchCtrl,
+          onChanged: (value) {
+            setState(() => _query = value.trim());
+          },
+          decoration: InputDecoration(
+            hintText: 'Tìm theo tên hoặc ID sản phẩm',
+            hintStyle: const TextStyle(fontSize: 11),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 9,
+            ),
+            suffixIcon: const Icon(
+              Icons.search_rounded,
+              size: 16,
+              color: Color(0xFF7A7A7A),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Color(0xFFEA580C)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Đã chọn: ${widget.selectedIds.length} sản phẩm',
+          style: const TextStyle(fontSize: 11, color: Color(0xFF7A7A7A)),
+        ),
+        const SizedBox(height: 6),
+        if (widget.loading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: LinearProgressIndicator(minHeight: 2),
+          )
+        else if (widget.products.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Chưa có sản phẩm để chọn',
+              style: TextStyle(fontSize: 11, color: Color(0xFF7A7A7A)),
+            ),
+          )
+        else if (filteredProducts.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Không tìm thấy sản phẩm phù hợp',
+              style: TextStyle(fontSize: 11, color: Color(0xFF7A7A7A)),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFDDDDDD)),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: preview.map((product) {
+                final selected = widget.selectedIds.contains(product.id);
+                return FilterChip(
+                  selected: selected,
+                  onSelected: (_) => widget.onToggle(product.id),
+                  label: Text(
+                    '${product.name} (${product.id})',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  selectedColor: const Color(0xFFFFF2E8),
+                  checkmarkColor: const Color(0xFFEA580C),
+                  side: BorderSide(
+                    color: selected
+                        ? const Color(0xFFEA580C)
+                        : const Color(0xFFDDDDDD),
+                  ),
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    color: selected
+                        ? const Color(0xFFB54A00)
+                        : const Color(0xFF171717),
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        if (filteredProducts.length > preview.length)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              'Hiển thị ${preview.length}/${filteredProducts.length} kết quả. Hãy gõ thêm để lọc chính xác hơn.',
+              style: const TextStyle(fontSize: 10, color: Color(0xFF7A7A7A)),
+            ),
+          ),
+      ],
+    );
   }
 }
 

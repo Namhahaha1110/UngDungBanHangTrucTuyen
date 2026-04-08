@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_service.dart';
 import '../../services/shop_repository.dart';
 import 'admin_view_mode.dart';
 import 'widgets/admin_top_bar.dart';
@@ -14,10 +15,16 @@ import 'screens/admin_users_page.dart';
 import 'screens/admin_vouchers_page.dart';
 
 class AdminShell extends StatefulWidget {
-  const AdminShell({required this.repository, required this.userId, super.key});
+  const AdminShell({
+    required this.repository,
+    required this.userId,
+    required this.authService,
+    super.key,
+  });
 
   final ShopRepository repository;
   final String userId;
+  final AuthService authService;
 
   @override
   State<AdminShell> createState() => _AdminShellState();
@@ -100,6 +107,19 @@ class _AdminShellState extends State<AdminShell> {
                 ),
               ),
               ..._buildDrawerItems(),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Color(0xFFd12626)),
+                title: const Text(
+                  'Đăng xuất',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFd12626),
+                  ),
+                ),
+                onTap: _onSignOut,
+              ),
             ],
           ),
         ),
@@ -203,6 +223,11 @@ class _AdminShellState extends State<AdminShell> {
         },
       );
     });
+  }
+
+  Future<void> _onSignOut() async {
+    Navigator.of(context).pop();
+    await widget.authService.signOut();
   }
 
   void _openModule(int index) {

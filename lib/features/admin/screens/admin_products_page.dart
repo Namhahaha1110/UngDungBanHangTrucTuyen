@@ -237,6 +237,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _priceCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _imageUrlCtrl;
+  late final TextEditingController _sizesCtrl;
+  late final TextEditingController _colorsCtrl;
   late final TextEditingController _descCtrl;
   List<ShopCategory> _categories = const [];
   String? _selectedCategoryId;
@@ -254,6 +256,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _priceCtrl = TextEditingController(text: p?.price.toString() ?? '');
     _stockCtrl = TextEditingController(text: p?.stock.toString() ?? '0');
     _imageUrlCtrl = TextEditingController(text: p?.image ?? '');
+    _sizesCtrl = TextEditingController(text: p?.sizeOptions.join(', ') ?? '');
+    _colorsCtrl = TextEditingController(text: p?.colorOptions.join(', ') ?? '');
     _descCtrl = TextEditingController(text: p?.description ?? '');
     _selectedCategoryId = p?.categoryId;
     _loadMeta();
@@ -266,6 +270,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _priceCtrl.dispose();
     _stockCtrl.dispose();
     _imageUrlCtrl.dispose();
+    _sizesCtrl.dispose();
+    _colorsCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -325,6 +331,14 @@ class _ProductFormPageState extends State<ProductFormPage> {
                       keyboardType: TextInputType.number,
                     ),
                     _LabeledField(
+                      label: 'Size (phân tách bằng dấu phẩy)',
+                      controller: _sizesCtrl,
+                    ),
+                    _LabeledField(
+                      label: 'Màu sắc (phân tách bằng dấu phẩy)',
+                      controller: _colorsCtrl,
+                    ),
+                    _LabeledField(
                       label: 'Mô tả',
                       controller: _descCtrl,
                       maxLines: 4,
@@ -379,6 +393,16 @@ class _ProductFormPageState extends State<ProductFormPage> {
       _snack('Tồn kho không hợp lệ');
       return;
     }
+    final sizes = _splitCsv(_sizesCtrl.text);
+    final colors = _splitCsv(_colorsCtrl.text);
+    if (sizes.isEmpty) {
+      _snack('Vui lòng nhập ít nhất 1 size');
+      return;
+    }
+    if (colors.isEmpty) {
+      _snack('Vui lòng nhập ít nhất 1 màu');
+      return;
+    }
 
     setState(() => _saving = true);
     try {
@@ -412,6 +436,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
         description: _descCtrl.text.trim(),
         soldText: stock <= 0 ? 'Hết hàng' : 'Còn $stock sản phẩm',
         imageKey: imageRef,
+        sizeOptions: sizes,
+        colorOptions: colors,
       );
 
       if (widget.isEdit) {
@@ -507,6 +533,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
       _pickedImageName = picked.name;
       _imageUrlCtrl.clear();
     });
+  }
+
+  List<String> _splitCsv(String raw) {
+    return raw
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
   }
 }
 
@@ -673,6 +708,26 @@ class _ProductListRow extends StatelessWidget {
                     fontSize: 10,
                     color: Color(0xFF7a7a7a),
                   ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Size: ${product.sizeOptions.join('/')}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF7a7a7a),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Màu: ${product.colorOptions.join('/')}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF7a7a7a),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

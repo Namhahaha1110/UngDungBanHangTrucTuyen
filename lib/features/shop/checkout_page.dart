@@ -29,6 +29,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool _isSubmitting = false;
   String? _selectedAddressId;
   String _paymentMethod = 'cod';
+  late List<UserProductItem> _checkoutItems;
 
   ShopVoucher? _selectedShippingVoucher;
   ShopVoucher? _selectedShopVoucher;
@@ -36,7 +37,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   List<ShippingAddress> _lastAddresses = const [];
 
   int get _subtotal =>
-      widget.items.fold<int>(0, (value, item) => value + item.totalPrice);
+      _checkoutItems.fold<int>(0, (value, item) => value + item.totalPrice);
 
   int get _shippingDiscount => _selectedShippingVoucher == null
       ? 0
@@ -67,6 +68,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _checkoutItems = List<UserProductItem>.from(widget.items);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Thanh toán')),
@@ -75,15 +82,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
         builder: (context, snapshot) {
           final addresses = snapshot.data ?? const <ShippingAddress>[];
           final selected = _resolveSelectedAddress(addresses);
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(0, 0, 0, 110),
-            children: [
+          return StreamBuilder<List<ShopProduct>>(
+            stream: widget.repository.products(),
+            builder: (context, productSnapshot) {
+              final productMap = <String, ShopProduct>{
+                for (final p in (productSnapshot.data ?? const <ShopProduct>[]))
+                  p.id: p,
+              };
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 110),
+                children: [
               _AddressSection(
                 address: selected,
                 onTap: () => _openAddressSelector(context),
               ),
               const Divider(height: 1),
-              _ProductsSection(items: widget.items),
+              _ProductsSection(
+                items: _checkoutItems,
+                productById: productMap,
+                onChangeVariant: _onChangeVariant,
+              ),
               const Divider(height: 1),
               _ActionRow(
                 title: 'Voucher của Shop',
@@ -157,7 +175,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ],
                 ),
               ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
@@ -253,7 +273,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           '${address.recipientName} • ${address.phone}\n${address.addressLine}';
       await widget.repository.checkout(
         widget.userId,
-        items: widget.items,
+        items: _checkoutItems,
         address: orderAddress,
         paymentMethod: _paymentMethod,
         voucherDiscount: _voucherDiscount,
@@ -343,6 +363,110 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (discount > base) return base;
     return discount < 0 ? 0 : discount;
   }
+
+  Future<void> _onChangeVariant(UserProductItem item, ShopProduct? product) async {
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không tải được tùy chọn size/màu cho sản phẩm này')),
+      );
+      return;
+    }
+    final result = await showModalBottomSheet<(String, String)>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        var selectedSize = item.selectedSize.isNotEmpty
+            ? item.selectedSize
+            : (product.sizeOptions.isNotEmpty ? product.sizeOptions.first : '');
+        var selectedColor = item.selectedColor.isNotEmpty
+            ? item.selectedColor
+            : (product.colorOptions.isNotEmpty ? product.colorOptions.first : '');
+        final sizeOptions = product.sizeOptions.isNotEmpty
+            ? product.sizeOptions
+            : const <String>['M'];
+        final colorOptions = product.colorOptions;
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chọn phân loại',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Size',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: sizeOptions.map((size) {
+                      return ChoiceChip(
+                        label: Text(size),
+                        selected: selectedSize == size,
+                        onSelected: (_) {
+                          setLocalState(() => selectedSize = size);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  if (colorOptions.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Màu sắc',
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: colorOptions.map((color) {
+                        return ChoiceChip(
+                          label: Text(color),
+                          selected: selectedColor == color,
+                          onSelected: (_) {
+                            setLocalState(() => selectedColor = color);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop((selectedSize, selectedColor));
+                      },
+                      child: const Text('Áp dụng'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (result == null) return;
+    final idx = _checkoutItems.indexWhere((e) => e.id == item.id);
+    if (idx == -1) return;
+    setState(() {
+      _checkoutItems[idx] = _checkoutItems[idx].copyWith(
+        selectedSize: result.$1,
+        selectedColor: result.$2,
+      );
+    });
+  }
 }
 
 class _AddressSection extends StatelessWidget {
@@ -409,9 +533,16 @@ class _AddressSection extends StatelessWidget {
 }
 
 class _ProductsSection extends StatelessWidget {
-  const _ProductsSection({required this.items});
+  const _ProductsSection({
+    required this.items,
+    required this.productById,
+    required this.onChangeVariant,
+  });
 
   final List<UserProductItem> items;
+  final Map<String, ShopProduct> productById;
+  final void Function(UserProductItem item, ShopProduct? product)
+  onChangeVariant;
 
   @override
   Widget build(BuildContext context) {
@@ -455,11 +586,26 @@ class _ProductsSection extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'Đen,Size L',
-                              style: TextStyle(
+                            Text(
+                              _variantLabel(item),
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () => onChangeVariant(
+                                item,
+                                productById[item.productId],
+                              ),
+                              child: const Text(
+                                'Đổi phân loại',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -524,6 +670,17 @@ class _ProductsSection extends StatelessWidget {
         }).toList(),
       ),
     );
+  }
+
+  String _variantLabel(UserProductItem item) {
+    final hasSize = item.selectedSize.trim().isNotEmpty;
+    final hasColor = item.selectedColor.trim().isNotEmpty;
+    if (!hasSize && !hasColor) return 'Chưa chọn phân loại';
+    if (hasSize && hasColor) {
+      return '${item.selectedColor}, Size ${item.selectedSize}';
+    }
+    if (hasColor) return item.selectedColor;
+    return 'Size ${item.selectedSize}';
   }
 }
 

@@ -204,7 +204,9 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(child: _HomeBannerCarousel(repository: repository)),
+        SliverToBoxAdapter(
+          child: _HomeBannerCarousel(repository: repository, userId: userId),
+        ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 33, 16, 0),
@@ -426,9 +428,10 @@ class _HomeTab extends StatelessWidget {
 }
 
 class _HomeBannerCarousel extends StatefulWidget {
-  const _HomeBannerCarousel({required this.repository});
+  const _HomeBannerCarousel({required this.repository, required this.userId});
 
   final ShopRepository repository;
+  final String userId;
 
   @override
   State<_HomeBannerCarousel> createState() => _HomeBannerCarouselState();
@@ -446,10 +449,34 @@ class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
     super.initState();
     _pageController = PageController(viewportFraction: 0.928);
     _bannerSub = widget.repository.banners().listen((fetched) {
+      final byId = <String, PromoBanner>{
+        for (final item in fetched) item.id.trim().toLowerCase(): item,
+      };
       final banners = <PromoBanner>[
-        PromoBanner(id: 'home_fixed_banner_1', image: 'banner_1.png'),
-        PromoBanner(id: 'home_fixed_banner_2', image: 'banner_2.png'),
-        PromoBanner(id: 'home_fixed_banner_3', image: 'banner_3.png'),
+        PromoBanner(
+          id: 'home_fixed_banner_1',
+          image: 'banner_1.png',
+          productIds: byId['banner_1']?.productIds ?? const [],
+          campaignName: byId['banner_1']?.campaignName ?? '',
+          campaignDiscountPercent:
+              byId['banner_1']?.campaignDiscountPercent ?? 0,
+        ),
+        PromoBanner(
+          id: 'home_fixed_banner_2',
+          image: 'banner_2.png',
+          productIds: byId['banner_2']?.productIds ?? const [],
+          campaignName: byId['banner_2']?.campaignName ?? '',
+          campaignDiscountPercent:
+              byId['banner_2']?.campaignDiscountPercent ?? 0,
+        ),
+        PromoBanner(
+          id: 'home_fixed_banner_3',
+          image: 'banner_3.png',
+          productIds: byId['banner_3']?.productIds ?? const [],
+          campaignName: byId['banner_3']?.campaignName ?? '',
+          campaignDiscountPercent:
+              byId['banner_3']?.campaignDiscountPercent ?? 0,
+        ),
         ...fetched.where((item) {
           final id = item.id.trim().toLowerCase();
           if (id == 'banner_1' || id == 'banner_2' || id == 'banner_3') {
@@ -490,9 +517,13 @@ class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
           final banner = _banners[index];
           return Padding(
             padding: const EdgeInsets.only(left: 16, right: 8, top: 18),
-            child: ClipRRect(
+            child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              child: SmartShopImage(source: banner.image, fit: BoxFit.cover),
+              onTap: () => _openBannerCampaign(context, banner),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: SmartShopImage(source: banner.image, fit: BoxFit.cover),
+              ),
             ),
           );
         },
@@ -513,6 +544,154 @@ class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
       );
       _currentIndex = next;
     });
+  }
+
+  void _openBannerCampaign(BuildContext context, PromoBanner banner) {
+    if (banner.productIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Banner này chưa gắn sản phẩm chương trình')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _BannerCampaignProductsPage(
+          repository: widget.repository,
+          userId: widget.userId,
+          banner: banner,
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerCampaignProductsPage extends StatelessWidget {
+  const _BannerCampaignProductsPage({
+    required this.repository,
+    required this.userId,
+    required this.banner,
+  });
+
+  final ShopRepository repository;
+  final String userId;
+  final PromoBanner banner;
+
+  @override
+  Widget build(BuildContext context) {
+    final campaignTitle = banner.campaignName.trim().isNotEmpty
+        ? banner.campaignName.trim()
+        : 'Ưu đãi theo banner';
+    return Scaffold(
+      appBar: AppBar(title: Text(campaignTitle)),
+      body: StreamBuilder<List<ShopProduct>>(
+        stream: repository.products(),
+        builder: (context, snapshot) {
+          final all = snapshot.data ?? const <ShopProduct>[];
+          final ids = banner.productIds.toSet();
+          var products = all.where((item) => ids.contains(item.id)).toList();
+          if (products.isEmpty) {
+            return const Center(
+              child: Text('Banner này hiện chưa có sản phẩm chương trình'),
+            );
+          }
+          products.sort((a, b) {
+            final aDiscount = (a.oldPrice - a.price);
+            final bDiscount = (b.oldPrice - b.price);
+            return bDiscount.compareTo(aDiscount);
+          });
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+            itemCount: products.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final product = products[index];
+              final isDiscounted = product.oldPrice > product.price;
+              final campaignDiscount = banner.campaignDiscountPercent.clamp(
+                0,
+                95,
+              );
+              final campaignPrice = campaignDiscount > 0
+                  ? (product.price * (100 - campaignDiscount) / 100).round()
+                  : product.price;
+              return ListTile(
+                tileColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFFECECEC)),
+                ),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SmartShopImage(
+                    source: product.image,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                title: Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  _buildCampaignPriceText(
+                    product: product,
+                    isDiscounted: isDiscounted,
+                    campaignDiscount: campaignDiscount,
+                    campaignPrice: campaignPrice,
+                  ),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  final openProduct = _applyBannerDiscount(
+                    product,
+                    banner.campaignDiscountPercent,
+                  );
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ProductDetailPage(
+                        repository: repository,
+                        userId: userId,
+                        product: openProduct,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _buildCampaignPriceText({
+    required ShopProduct product,
+    required bool isDiscounted,
+    required int campaignDiscount,
+    required int campaignPrice,
+  }) {
+    if (campaignDiscount > 0) {
+      return '${formatCurrency(campaignPrice)}  (banner -$campaignDiscount%)';
+    }
+    if (isDiscounted) {
+      return '${formatCurrency(product.price)}  (giảm từ ${formatCurrency(product.oldPrice)})';
+    }
+    return formatCurrency(product.price);
+  }
+
+  ShopProduct _applyBannerDiscount(ShopProduct product, int percentRaw) {
+    final percent = percentRaw.clamp(0, 95);
+    if (percent <= 0) return product;
+    final basePrice = product.price;
+    final discounted = (basePrice * (100 - percent) / 100).round();
+    final safePrice = discounted < 0 ? 0 : discounted;
+    // Keep oldPrice = basePrice so detail page discount badge matches banner campaign percent.
+    return product.copyWith(price: safePrice, oldPrice: basePrice);
   }
 }
 
@@ -2236,5 +2415,7 @@ ShopProduct _productFromItem(UserProductItem item) {
     categoryId: '',
     description: item.description,
     soldText: item.soldText,
+    sizeOptions: item.selectedSize.isEmpty ? const [] : [item.selectedSize],
+    colorOptions: item.selectedColor.isEmpty ? const [] : [item.selectedColor],
   );
 }

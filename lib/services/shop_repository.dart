@@ -158,16 +158,32 @@ class ShopRepository {
     await ref.set(product.toUserMap());
   }
 
-  Future<void> addToCart(String userId, ShopProduct product) async {
+  Future<void> addToCart(
+    String userId,
+    ShopProduct product, {
+    String? selectedSize,
+    String? selectedColor,
+  }) async {
+    final normalizedSize = (selectedSize ?? '').trim();
+    final normalizedColor = (selectedColor ?? '').trim();
+    final variantKey = _buildCartVariantKey(
+      productId: product.id,
+      selectedSize: normalizedSize,
+      selectedColor: normalizedColor,
+    );
     final ref = _firestore
         .collection('users')
         .doc(userId)
         .collection('cart')
-        .doc(product.id);
+        .doc(variantKey);
     final snapshot = await ref.get();
     final quantity = ((snapshot.data()?['quantity'] as num?)?.toInt() ?? 0) + 1;
     await ref.set(
-      product.toUserMap(quantity: quantity),
+      product.toUserMap(
+        quantity: quantity,
+        selectedSize: normalizedSize,
+        selectedColor: normalizedColor,
+      ),
       SetOptions(merge: true),
     );
   }
@@ -181,7 +197,7 @@ class ShopRepository {
         .collection('users')
         .doc(userId)
         .collection('cart')
-        .doc(item.productId);
+        .doc(item.id);
     if (quantity <= 0) {
       await ref.delete();
       return;
@@ -195,6 +211,8 @@ class ShopRepository {
         'image': item.image,
         'description': item.description,
         'soldText': item.soldText,
+        'selectedSize': item.selectedSize,
+        'selectedColor': item.selectedColor,
       },
       'quantity': quantity,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -234,6 +252,8 @@ class ShopRepository {
               'image': item.image,
               'price': item.price,
               'quantity': item.quantity,
+              'selectedSize': item.selectedSize,
+              'selectedColor': item.selectedColor,
             },
           )
           .toList(),
@@ -250,7 +270,7 @@ class ShopRepository {
           .collection('users')
           .doc(userId)
           .collection('cart')
-          .doc(item.productId);
+          .doc(item.id);
       batch.delete(cartRef);
     }
 
@@ -378,6 +398,8 @@ class ShopRepository {
       'categoryId': product.categoryId,
       'description': product.description,
       'soldText': product.soldText,
+      'sizeOptions': product.sizeOptions,
+      'colorOptions': product.colorOptions,
     });
   }
 
@@ -392,6 +414,8 @@ class ShopRepository {
       'imageKey': product.imageKey,
       'soldText': product.soldText,
       'description': product.description,
+      'sizeOptions': product.sizeOptions,
+      'colorOptions': product.colorOptions,
     });
   }
 
@@ -428,7 +452,7 @@ class ShopRepository {
     await _firestore
         .collection('banners')
         .doc(banner.id)
-        .update(banner.toMap());
+        .set(banner.toMap(), SetOptions(merge: true));
   }
 
   Future<void> deleteBanner(String bannerId) async {
@@ -726,5 +750,21 @@ class ShopRepository {
       return DateTime(now.year, now.month, now.day, hour, minute);
     }
     return null;
+  }
+
+  String _buildCartVariantKey({
+    required String productId,
+    required String selectedSize,
+    required String selectedColor,
+  }) {
+    final size = selectedSize.isEmpty ? 'nosize' : selectedSize;
+    final color = selectedColor.isEmpty ? 'nocolor' : selectedColor;
+    String sanitize(String value) {
+      return value
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s+'), '_')
+          .replaceAll(RegExp(r'[^a-z0-9_-]'), '');
+    }
+    return '${sanitize(productId)}__${sanitize(size)}__${sanitize(color)}';
   }
 }
