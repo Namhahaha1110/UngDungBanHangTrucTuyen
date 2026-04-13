@@ -70,3 +70,4 @@ package-lock.json
 /scripts/
 tool/create_admin_account.ps1
 tool/generate_admin_import_svg.js
+*.mp4
